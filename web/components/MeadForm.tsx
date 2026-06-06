@@ -11,6 +11,7 @@ import {
   startingGravity,
   blankMead,
 } from "@/lib/mead";
+import { VesselSVG } from "@/components/VesselSVG";
 
 interface Props {
   initial?: Mead;
@@ -40,6 +41,15 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
         onSubmit(draft);
       }}
     >
+      <div className="grid sm:grid-cols-[160px,1fr] gap-5 items-start">
+        <div className="mx-auto sm:mx-0 sm:sticky sm:top-4">
+          <VesselSVG mead={draft} phase="lag" size={150} />
+          <p className="text-xs text-center text-[var(--muted)] mt-1">
+            {totalL <= 0.01 ? "empty — add honey + water" : `${totalL.toFixed(1)} L of ${vessel.capacityL.toFixed(1)} L`}
+          </p>
+        </div>
+        <div className="grid gap-4">
+
       <div className="grid gap-1">
         <label htmlFor="name" className="text-sm font-medium">Batch name</label>
         <input
@@ -141,10 +151,13 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
         </div>
       </div>
 
+        </div>
+      </div>
+
       <div className="grid grid-cols-3 gap-3 text-sm border-t border-[var(--line)] pt-4">
-        <Stat label="Starting gravity" value={sg.toFixed(3)} />
-        <Stat label="Est. final gravity" value={estFG.toFixed(3)} />
-        <Stat label="Est. ABV" value={`${estABV.toFixed(1)}%`} />
+        <Stat label="Starting gravity" value={totalL <= 0.01 ? "—" : sg.toFixed(3)} />
+        <Stat label="Est. final gravity" value={totalL <= 0.01 ? "—" : estFG.toFixed(3)} />
+        <Stat label="Est. ABV" value={totalL <= 0.01 ? "—" : `${estABV.toFixed(1)}%`} />
       </div>
 
       {overCapacity ? (

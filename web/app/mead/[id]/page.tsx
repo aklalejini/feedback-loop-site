@@ -8,13 +8,14 @@ import { Timeline } from "@/components/Timeline";
 import { VesselSVG } from "@/components/VesselSVG";
 import { events } from "@/lib/analytics";
 import { deleteMead, getMead, upsertMead } from "@/lib/storage";
-import { project, type Mead, type Observation } from "@/lib/mead";
+import { project, type Mead, type Observation, type PhaseName } from "@/lib/mead";
 
 export default function MeadDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [mead, setMead] = useState<Mead | null | undefined>(undefined);
   const [editing, setEditing] = useState(false);
+  const [previewPhase, setPreviewPhase] = useState<PhaseName | null>(null);
 
   useEffect(() => {
     const id = params?.id;
@@ -116,14 +117,29 @@ export default function MeadDetailPage() {
       </header>
 
       <section className="grid sm:grid-cols-[auto,1fr] gap-6 items-start">
-        <VesselSVG mead={mead} phase={proj.currentPhase} />
+        <VesselSVG mead={mead} phase={previewPhase ?? proj.currentPhase} />
         <div className="grid gap-4">
           <div className="grid grid-cols-3 gap-3 text-sm">
             <Stat label="Starting gravity" value={proj.startingGravity.toFixed(3)} />
             <Stat label="Est. final gravity" value={proj.estFinalGravity.toFixed(3)} />
             <Stat label="Est. ABV" value={`${proj.estABV.toFixed(1)}%`} />
           </div>
-          <Timeline projection={proj} />
+          <Timeline
+            projection={proj}
+            selectedPhase={previewPhase}
+            onSelectPhase={setPreviewPhase}
+          />
+          {previewPhase ? (
+            <button
+              type="button"
+              onClick={() => setPreviewPhase(null)}
+              className="justify-self-start text-xs underline text-[var(--muted)] hover:text-[var(--ink)]"
+            >
+              ← back to now
+            </button>
+          ) : (
+            <p className="text-xs text-[var(--muted)]">Tip: click a phase above to preview the vessel at that point.</p>
+          )}
         </div>
       </section>
 

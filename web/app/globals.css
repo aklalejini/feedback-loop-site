@@ -23,12 +23,28 @@ button, input, select, textarea {
   font: inherit;
 }
 
-@keyframes bubble {
-  0%   { transform: translateY(0) scale(0.7); opacity: 0; }
-  20%  { opacity: 0.8; }
-  100% { transform: translateY(-110px) scale(1); opacity: 0; }
+/* Rising fermentation bubble.
+   Travels upward by --rise pixels (negative when up in SVG coords),
+   fading in then out. */
+@keyframes bubble-rise {
+  0%   { transform: translateY(0)          scale(0.6); opacity: 0; }
+  15%  { opacity: 0.9; }
+  85%  { opacity: 0.6; }
+  100% { transform: translateY(var(--rise, -100px)) scale(1); opacity: 0; }
+}
+
+/* Single bubble trickling inside the airlock's water reservoir. */
+@keyframes airlock-bubble {
+  0%   { transform: translateY(8px) scale(0.6); opacity: 0; }
+  15%  { opacity: 1; }
+  50%  { transform: translateY(-2px) scale(1); opacity: 1; }
+  100% { transform: translateY(-10px) scale(0.7); opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bubble { animation: none !important; opacity: 0 !important; }
+  .bubble-rise,
+  .airlock-bubble {
+    animation: none !important;
+    opacity: 0 !important;
+  }
 }
