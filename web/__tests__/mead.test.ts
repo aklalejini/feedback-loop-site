@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   blankMead,
   currentPhase,
+  fermentationRisks,
+  gravitySource,
+  potentialAbvToDry,
   project,
+  sampleMead,
+  SAMPLE_MEAD_NAME_PREFIX,
   startingGravity,
   YEASTS,
   type Mead,
@@ -96,5 +101,100 @@ describe("YEAST table", () => {
       expect(y.attenuationPct).toBeGreaterThan(0.5);
       expect(y.attenuationPct).toBeLessThanOrEqual(1.0);
     }
+  });
+});
+
+describe("sampleMead", () => {
+  it("is identifiable as a sample via the name prefix", () => {
+    expect(sampleMead().name.startsWith(SAMPLE_MEAD_NAME_PREFIX)).toBe(true);
+  });
+
+  it("lands in primary or secondary on first view (backdated ~21 days)", () => {
+    const now = new Date("2026-06-06T00:00:00.000Z");
+    const s = sampleMead(now);
+    const p = project(s, now);
+    expect(["primary", "secondary"]).toContain(p.currentPhase);
+  });
+
+  it("contains one example observation so the timeline re-projects", () => {
+    expect(sampleMead().observations.length).toBe(1);
+  });
+
+  it("each call yields a fresh id (so multiple loads don't collide)", () => {
+    expect(sampleMead().id).not.toBe(sampleMead().id);
+  });
+
+  it("produces a realistic mead with ABV in the hobbyist band", () => {
+    const p = project(sampleMead());
+    expect(p.estABV).toBeGreaterThan(8);
+    expect(p.estABV).toBeLessThan(18);
+  });
+});
+
+describe("fermentationRisks", () => {
+  it("flags yeast tolerance when potential ABV exceeds it", () => {
+    // SG 1.140 → ~18.4% potential, well over D-47's ~14%
+    const risks = fermentationRisks(1.140, YEASTS["D-47"]);
+    expect(risks.some((r) => r.kind === "tolerance")).toBe(true);
+  });
+
+  it("does not flag tolerance for a standard batch within range", () => {
+    // SG 1.085 → ~11.2% potential, under D-47's ~14%
+    const risks = fermentationRisks(1.085, YEASTS["D-47"]);
+    expect(risks.some((r) => r.kind === "tolerance")).toBe(false);
+  });
+
+  it("flags osmotic stress above 1.120 regardless of yeast", () => {
+    const risks = fermentationRisks(1.135, YEASTS["EC-1118"]);
+    expect(risks.some((r) => r.kind === "osmotic")).toBe(true);
+  });
+
+  it("does not flag osmotic stress at exactly 1.120", () => {
+    const risks = fermentationRisks(1.120, YEASTS["EC-1118"]);
+    expect(risks.some((r) => r.kind === "osmotic")).toBe(false);
+  });
+
+  it("produces no risks for an empty must", () => {
+    expect(fermentationRisks(1.000, YEASTS["D-47"]).length).toBe(0);
+  });
+});
+
+describe("startingGravity (measured-OG override)", () => {
+  it("uses measuredOG verbatim when present", () => {
+    expect(startingGravity({ honeyKg: 1.4, waterL: 3.0, measuredOG: 1.072 })).toBe(1.072);
+  });
+  it("falls back to recipe estimate when measuredOG is undefined", () => {
+    const sg = startingGravity({ honeyKg: 1.4, waterL: 3.0 });
+    expect(sg).toBeGreaterThan(1.08);
+    expect(sg).toBeLessThan(1.16);
+  });
+  it("ignores measuredOG when it is 0 or negative (treats as unset)", () => {
+    expect(startingGravity({ honeyKg: 1.4, waterL: 3.0, measuredOG: 0 })).toBeGreaterThan(1.08);
+  });
+  it("propagates through project() so FG and ABV come off the measured value", () => {
+    const m: Mead = { ...blankMead("t"), honeyKg: 0, waterL: 0, measuredOG: 1.100, yeast: "D-47" };
+    const p = project(m, new Date(m.createdAt));
+    expect(p.startingGravity).toBe(1.100);
+    // FG = 1 + (0.1) * (1 - 0.8) = 1.020 → ABV ~ (1.100 - 1.020) * 131.25 = 10.5
+    expect(p.estABV).toBeCloseTo(10.5, 1);
+  });
+});
+
+describe("gravitySource", () => {
+  it("returns 'measured' when measuredOG is set and positive", () => {
+    expect(gravitySource({ measuredOG: 1.090 })).toBe("measured");
+  });
+  it("returns 'estimated' when measuredOG is absent or zero", () => {
+    expect(gravitySource({})).toBe("estimated");
+    expect(gravitySource({ measuredOG: 0 })).toBe("estimated");
+  });
+});
+
+describe("potentialAbvToDry", () => {
+  it("maps SG to ABV via the standard 131.25 factor", () => {
+    expect(potentialAbvToDry(1.100)).toBeCloseTo(13.125, 3);
+  });
+  it("clamps to zero below 1.000", () => {
+    expect(potentialAbvToDry(0.995)).toBe(0);
   });
 });

@@ -51,7 +51,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <DropMark />
                 <span className="font-display text-2xl font-semibold tracking-tight">Mead Planner</span>
               </a>
-              <span className="eyebrow">improving via daily loop</span>
+              <nav className="flex items-center gap-4 text-sm">
+                <a href="/yeast" className="no-underline text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
+                  Yeast guide
+                </a>
+                <span className="eyebrow hidden sm:inline">improving via daily loop</span>
+              </nav>
             </div>
             <div className="divider mt-4" />
           </header>

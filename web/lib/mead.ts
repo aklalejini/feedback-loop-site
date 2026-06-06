@@ -5,10 +5,12 @@ export type HoneyType = "clover" | "wildflower" | "orange_blossom" | "buckwheat"
 export type YeastStrain = "EC-1118" | "D-47" | "K1-V1116" | "71B-1122" | "Wyeast-4632" | "Bread";
 export type VesselKind = "jug-1gal" | "jug-5gal" | "bucket-5gal" | "demijohn-3gal";
 export type PhaseName = "lag" | "primary" | "secondary" | "conditioning" | "done";
+export type NitrogenNeed = "low" | "medium" | "high";
 
 export interface YeastInfo {
   strain: YeastStrain;
   attenuationPct: number; // 0..1, apparent attenuation
+  alcoholTolerancePct: number; // manufacturer-listed approx; depends on conditions
   lagDays: number;
   primaryDays: number;
   secondaryDays: number;
@@ -17,12 +19,12 @@ export interface YeastInfo {
 }
 
 export const YEASTS: Record<YeastStrain, YeastInfo> = {
-  "EC-1118":     { strain: "EC-1118",     attenuationPct: 0.95, lagDays: 1, primaryDays: 10, secondaryDays: 30, conditioningDays: 30, note: "Champagne yeast — fast, dry, high alcohol tolerance." },
-  "D-47":        { strain: "D-47",        attenuationPct: 0.80, lagDays: 2, primaryDays: 14, secondaryDays: 35, conditioningDays: 45, note: "Lalvin D-47 — fruity, well-suited to traditional mead." },
-  "K1-V1116":    { strain: "K1-V1116",    attenuationPct: 0.85, lagDays: 2, primaryDays: 12, secondaryDays: 30, conditioningDays: 30, note: "Killer strain, clean profile." },
-  "71B-1122":    { strain: "71B-1122",    attenuationPct: 0.82, lagDays: 2, primaryDays: 14, secondaryDays: 30, conditioningDays: 30, note: "Reduces malic acid — good for fruit meads." },
-  "Wyeast-4632": { strain: "Wyeast-4632", attenuationPct: 0.78, lagDays: 2, primaryDays: 16, secondaryDays: 40, conditioningDays: 60, note: "Dry mead profile, residual character." },
-  "Bread":       { strain: "Bread",       attenuationPct: 0.70, lagDays: 1, primaryDays: 7,  secondaryDays: 21, conditioningDays: 30, note: "Bread yeast — not ideal but it works. Lower alcohol tolerance." },
+  "EC-1118":     { strain: "EC-1118",     attenuationPct: 0.95, alcoholTolerancePct: 18, lagDays: 1, primaryDays: 10, secondaryDays: 30, conditioningDays: 30, note: "Champagne yeast — fast, dry, high alcohol tolerance." },
+  "D-47":        { strain: "D-47",        attenuationPct: 0.80, alcoholTolerancePct: 14, lagDays: 2, primaryDays: 14, secondaryDays: 35, conditioningDays: 45, note: "Lalvin D-47 — fruity, well-suited to traditional mead." },
+  "K1-V1116":    { strain: "K1-V1116",    attenuationPct: 0.85, alcoholTolerancePct: 18, lagDays: 2, primaryDays: 12, secondaryDays: 30, conditioningDays: 30, note: "Killer strain, clean profile." },
+  "71B-1122":    { strain: "71B-1122",    attenuationPct: 0.82, alcoholTolerancePct: 14, lagDays: 2, primaryDays: 14, secondaryDays: 30, conditioningDays: 30, note: "Reduces malic acid — good for fruit meads." },
+  "Wyeast-4632": { strain: "Wyeast-4632", attenuationPct: 0.78, alcoholTolerancePct: 18, lagDays: 2, primaryDays: 16, secondaryDays: 40, conditioningDays: 60, note: "Dry mead profile, residual character." },
+  "Bread":       { strain: "Bread",       attenuationPct: 0.70, alcoholTolerancePct: 10, lagDays: 1, primaryDays: 7,  secondaryDays: 21, conditioningDays: 30, note: "Bread yeast — not ideal but it works. Lower alcohol tolerance." },
 };
 
 export interface HoneyInfo {
@@ -73,6 +75,13 @@ export interface Mead {
   fruitsKg?: number;
   createdAt: string;   // ISO date
   observations: Observation[];
+  // Optional hydrometer reading of the actual must. When present it overrides
+  // the recipe estimate as the source of truth for FG/ABV (docs/research:
+  // "Prefer Measured OG").
+  measuredOG?: number;
+  // Optional override for the yeast's nitrogen demand, used by the TOSNA
+  // nutrient schedule. Defaults from the strain when unset.
+  nitrogenNeed?: NitrogenNeed;
 }
 
 export interface Phase {
@@ -93,10 +102,15 @@ export interface Projection {
 const HONEY_GRAVITY_PER_KG_PER_L = 0.319;
 const HONEY_DENSITY_L_PER_KG = 0.7; // honey ≈ 1.42 kg/L → 1 kg ≈ 0.7 L
 
-export function startingGravity(input: Pick<Mead, "honeyKg" | "waterL">): number {
+export function startingGravity(input: Pick<Mead, "honeyKg" | "waterL"> & { measuredOG?: number }): number {
+  if (typeof input.measuredOG === "number" && input.measuredOG > 0) return input.measuredOG;
   const totalL = Math.max(0, input.waterL) + Math.max(0, input.honeyKg) * HONEY_DENSITY_L_PER_KG;
   if (totalL <= 0) return 1.0;
   return 1 + (input.honeyKg * HONEY_GRAVITY_PER_KG_PER_L) / totalL;
+}
+
+export function gravitySource(input: { measuredOG?: number }): "measured" | "estimated" {
+  return typeof input.measuredOG === "number" && input.measuredOG > 0 ? "measured" : "estimated";
 }
 
 export function project(mead: Mead, now: Date = new Date()): Projection {
@@ -153,6 +167,36 @@ export function currentPhase(phases: Phase[], now: Date): PhaseName {
   return phases[0]?.name ?? "lag";
 }
 
+// A clearly-labeled example traditional mead so first-time visitors can see the
+// shape of the tool (vessel + timeline + stats) before filling the form.
+// 'Sample —' prefix and the SAMPLE_MEAD_NAME_PREFIX const keep it identifiable
+// in the list and let callers filter or dismiss it.
+export const SAMPLE_MEAD_NAME_PREFIX = "Sample — ";
+
+export function sampleMead(now: Date = new Date()): Mead {
+  // Standard traditional: ~1 kg orange-blossom honey in a 1-gallon jug, D-47.
+  // Backdated 21 days so the timeline lands in primary/secondary on first view.
+  const created = new Date(now.getTime() - 21 * 86400000);
+  return {
+    ...blankMead(`${SAMPLE_MEAD_NAME_PREFIX}Traditional`),
+    honeyType: "orange_blossom",
+    honeyKg: 1.0,
+    waterL: 2.8,
+    vessel: "jug-1gal",
+    yeast: "D-47",
+    spices: [],
+    createdAt: created.toISOString(),
+    observations: [
+      {
+        id: "sample-obs-1",
+        at: new Date(created.getTime() + 9 * 86400000).toISOString(),
+        gravity: 1.030,
+        note: "active fermentation, slowing — example reading",
+      },
+    ],
+  };
+}
+
 export function blankMead(name = "Untitled batch"): Mead {
   const id = typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
@@ -169,4 +213,52 @@ export function blankMead(name = "Untitled batch"): Mead {
     createdAt: new Date().toISOString(),
     observations: [],
   };
+}
+
+// ----- Honesty / safety risk flags (sourced from docs/research/mead-fermentation.md) -----
+
+export type RiskKind = "tolerance" | "osmotic" | "low-gravity";
+
+export interface Risk {
+  kind: RiskKind;
+  message: string;
+}
+
+// Potential ABV if the yeast attenuated the must to 1.000 (the dry limit).
+export function potentialAbvToDry(sg: number): number {
+  return Math.max(0, (sg - 1) * 131.25);
+}
+
+// Per docs/research "Yeast-Limited Final Gravity Estimate" and "Stuck Fermentation
+// Causes": warn when potential ABV exceeds the yeast's listed tolerance (expect
+// residual sweetness / stall) and when OG > 1.120 (osmotic stress).
+export function fermentationRisks(sg: number, yeast: YeastInfo): Risk[] {
+  const risks: Risk[] = [];
+  const potential = potentialAbvToDry(sg);
+  if (potential > yeast.alcoholTolerancePct + 0.5) {
+    risks.push({
+      kind: "tolerance",
+      message:
+        `Potential ABV (~${potential.toFixed(1)}%) exceeds ${yeast.strain}'s typical tolerance ` +
+        `(~${yeast.alcoholTolerancePct}%). Expect residual sweetness or a stall — tolerance varies ` +
+        `with nutrients and temperature.`,
+    });
+  }
+  if (sg > 1.120) {
+    risks.push({
+      kind: "osmotic",
+      message:
+        `Starting gravity above 1.120 stresses yeast (osmotic pressure). Stagger the honey, ` +
+        `aerate early, and consider a step-up nutrient schedule.`,
+    });
+  }
+  if (sg > 1 && sg < 1.030) {
+    risks.push({
+      kind: "low-gravity",
+      message:
+        `Starting gravity is very low. Final ABV will be modest; if this isn't intentional ` +
+        `(session mead), increase honey.`,
+    });
+  }
+  return risks;
 }
