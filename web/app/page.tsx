@@ -102,7 +102,7 @@ export default function HomePage() {
                     <SpriteVessel
                       vessel={m.vessel}
                       honeyType={m.honeyType}
-                      liters={m.waterL + m.honeyKg * 0.7}
+                      liters={m.waterL + (m.juiceL ?? 0) + m.honeyKg * 0.7}
                       phase={proj.currentPhase}
                       size={64}
                       animated={false}

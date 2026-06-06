@@ -7,6 +7,27 @@ export type VesselKind = "jug-1gal" | "jug-5gal" | "bucket-5gal" | "demijohn-3ga
 export type PhaseName = "lag" | "primary" | "secondary" | "conditioning" | "done";
 export type NitrogenNeed = "low" | "medium" | "high";
 
+// Common juices for melomels. Brix sourced from typical food-composition values;
+// these are estimates — measured OG always wins for accuracy (docs/research:
+// "Prefer Measured OG"). Values reflect 100% unsweetened juice.
+export type JuiceKind = "apple" | "grape" | "tart_cherry" | "pomegranate" | "orange";
+
+export interface JuiceInfo {
+  kind: JuiceKind;
+  label: string;
+  color: string;     // hex (for the chip)
+  typicalBrix: number; // °Bx of straight juice
+  note: string;
+}
+
+export const JUICES: Record<JuiceKind, JuiceInfo> = {
+  apple:        { kind: "apple",        label: "Apple",        color: "#e9c45c", typicalBrix: 12.0, note: "Classic cyser base; clean fruit." },
+  grape:        { kind: "grape",        label: "Grape",        color: "#7a3559", typicalBrix: 18.0, note: "High sugar — boosts gravity quickly." },
+  tart_cherry:  { kind: "tart_cherry",  label: "Tart cherry",  color: "#a92a3b", typicalBrix: 14.0, note: "Bright acid, deep color." },
+  pomegranate:  { kind: "pomegranate",  label: "Pomegranate",  color: "#8a1d2a", typicalBrix: 15.0, note: "Pucker + colour; pair with lower honey." },
+  orange:       { kind: "orange",       label: "Orange",       color: "#e08f24", typicalBrix: 11.0, note: "Bright citrus; lower sugar." },
+};
+
 export interface YeastInfo {
   strain: YeastStrain;
   attenuationPct: number; // 0..1, apparent attenuation
@@ -69,6 +90,11 @@ export interface Mead {
   honeyType: HoneyType;
   honeyKg: number;
   waterL: number;
+  // Optional fruit juice (melomel). Volume always counted; sugar contribution
+  // counted from the juice's typical Brix (an estimate — labeled as such; the
+  // measured-OG override still wins).
+  juiceType?: JuiceKind;
+  juiceL?: number;
   vessel: VesselKind;
   yeast: YeastStrain;
   spices: string[];
@@ -101,14 +127,40 @@ export interface Projection {
 }
 
 // 1 kg honey ≈ 0.319 gravity points per liter of total volume (≈ 35 points per lb per gal).
-const HONEY_GRAVITY_PER_KG_PER_L = 0.319;
-const HONEY_DENSITY_L_PER_KG = 0.7; // honey ≈ 1.42 kg/L → 1 kg ≈ 0.7 L
+export const HONEY_GRAVITY_PER_KG_PER_L = 0.319;
+// honey ≈ 1.42 kg/L → 1 kg ≈ 0.704 L (kept at 0.7 to match prior fills exactly)
+export const HONEY_DENSITY_L_PER_KG = 0.7;
+// ~0.004 SG per °Brix (Pearson; close enough across the mead/wine range)
+export const SG_PER_BRIX = 0.004;
 
-export function startingGravity(input: Pick<Mead, "honeyKg" | "waterL"> & { measuredOG?: number }): number {
+export interface MustComposition {
+  honeyL: number;   // honey's contribution to volume
+  juiceL: number;   // juice volume (0 if no juice)
+  waterL: number;   // free water
+  totalL: number;   // sum of the above
+}
+
+export function mustComposition(input: Pick<Mead, "honeyKg" | "waterL" | "juiceL">): MustComposition {
+  const honeyL = Math.max(0, input.honeyKg ?? 0) * HONEY_DENSITY_L_PER_KG;
+  const juiceL = Math.max(0, input.juiceL ?? 0);
+  const waterL = Math.max(0, input.waterL ?? 0);
+  return { honeyL, juiceL, waterL, totalL: honeyL + juiceL + waterL };
+}
+
+type GravityInput = Pick<Mead, "honeyKg" | "waterL" | "juiceL" | "juiceType"> & { measuredOG?: number };
+
+export function startingGravity(input: GravityInput): number {
   if (typeof input.measuredOG === "number" && input.measuredOG > 0) return input.measuredOG;
-  const totalL = Math.max(0, input.waterL) + Math.max(0, input.honeyKg) * HONEY_DENSITY_L_PER_KG;
+  const { totalL } = mustComposition(input);
   if (totalL <= 0) return 1.0;
-  return 1 + (input.honeyKg * HONEY_GRAVITY_PER_KG_PER_L) / totalL;
+  const honeyPoints = Math.max(0, input.honeyKg ?? 0) * HONEY_GRAVITY_PER_KG_PER_L;
+  // Juice contributes sugar = juiceL × (typicalBrix × SG/°Bx). Volume already
+  // counted in totalL above. This is a recipe estimate; juice composition
+  // varies, so measured OG should override (per docs/research).
+  const juiceL = Math.max(0, input.juiceL ?? 0);
+  const juiceBrix = input.juiceType ? JUICES[input.juiceType].typicalBrix : 0;
+  const juicePoints = juiceL * juiceBrix * SG_PER_BRIX;
+  return 1 + (honeyPoints + juicePoints) / totalL;
 }
 
 export function gravitySource(input: { measuredOG?: number }): "measured" | "estimated" {

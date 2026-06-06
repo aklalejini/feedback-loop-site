@@ -11,7 +11,7 @@
 //   total_fermaid_o_g = (((Brix * 10) * factor) / 50) * batch_volume_gal
 // verified against Example 3 (5 gal, 24 Brix, Medium -> 21.6 g, 5.4 g x4).
 
-import { startingGravity, type Mead, type NitrogenNeed, type YeastStrain } from "./mead";
+import { mustComposition, startingGravity, type Mead, type NitrogenNeed, type YeastStrain } from "./mead";
 
 export const NITROGEN_FACTORS: Record<NitrogenNeed, number> = {
   low: 0.75,
@@ -25,7 +25,6 @@ export const NITROGEN_NEED_LABELS: Record<NitrogenNeed, string> = {
   high: "High",
 };
 
-const HONEY_DENSITY_L_PER_KG = 0.7; // matches lib/mead
 const L_PER_GAL = 3.78541;
 
 // Strains the research brief explicitly calls low nitrogen demand
@@ -82,7 +81,7 @@ export interface NutrientSchedule {
 // Returns null for an empty/too-dilute must (no meaningful schedule).
 export function tosnaSchedule(mead: Mead, override?: NitrogenNeed): NutrientSchedule | null {
   const og = startingGravity(mead);
-  const volumeL = Math.max(0, mead.waterL) + Math.max(0, mead.honeyKg) * HONEY_DENSITY_L_PER_KG;
+  const volumeL = mustComposition(mead).totalL;
   if (og <= 1.0001 || volumeL <= 0.01) return null;
 
   const nitrogenNeed = override ?? mead.nitrogenNeed ?? defaultNitrogenNeed(mead.yeast);
