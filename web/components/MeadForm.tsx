@@ -5,13 +5,20 @@ import {
   type HoneyType,
   type YeastStrain,
   type VesselKind,
+  type NitrogenNeed,
   HONEYS,
   YEASTS,
   VESSELS,
   startingGravity,
   blankMead,
+  fermentationRisks,
+  gravitySource,
 } from "@/lib/mead";
+import { defaultNitrogenNeed, NITROGEN_NEED_LABELS } from "@/lib/nutrients";
+import { NutrientSchedule } from "@/components/NutrientSchedule";
 import { SpriteVessel } from "@/components/SpriteVessel";
+
+const NITROGEN_OPTS: NitrogenNeed[] = ["low", "medium", "high"];
 
 interface Props {
   initial?: Mead;
@@ -182,6 +189,61 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             </div>
           </Field>
 
+          {/* Yeast nitrogen need (drives the nutrient schedule) */}
+          <Field label="Yeast nitrogen need (for nutrients)">
+            <div className="flex gap-2">
+              {NITROGEN_OPTS.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-pressed={(draft.nitrogenNeed ?? defaultNitrogenNeed(draft.yeast)) === n}
+                  onClick={() => update("nitrogenNeed", n)}
+                  className="opt px-3 py-1.5 text-xs font-semibold"
+                >
+                  {NITROGEN_NEED_LABELS[n]}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-[var(--muted)] mt-1">
+              Defaults from the yeast; adjust if you know its demand.
+            </p>
+          </Field>
+
+          {/* Measured OG (optional override) */}
+          <Field label="Measured OG (hydrometer, optional)" htmlFor="measuredOG">
+            <div className="flex gap-2 items-center">
+              <input
+                id="measuredOG"
+                type="number"
+                step="0.001"
+                min="1.000"
+                max="1.200"
+                className="in font-mono w-32"
+                value={draft.measuredOG ?? ""}
+                placeholder="e.g. 1.092"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setDraft((d) => ({
+                    ...d,
+                    measuredOG: v === "" ? undefined : Number(v),
+                  }));
+                }}
+              />
+              {draft.measuredOG != null ? (
+                <button
+                  type="button"
+                  className="text-xs underline text-[var(--muted)] hover:text-[var(--ink)]"
+                  onClick={() => setDraft((d) => ({ ...d, measuredOG: undefined }))}
+                >
+                  clear
+                </button>
+              ) : null}
+            </div>
+            <p className="text-xs text-[var(--muted)] mt-1">
+              A hydrometer reading of your must overrides the recipe estimate.
+            </p>
+          </Field>
+
           {/* Spices */}
           <Field label="Spices / additions (optional)">
             <div className="flex flex-wrap gap-2">
@@ -210,11 +272,41 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
       </div>
 
       {/* stats */}
-      <div className="grid grid-cols-3 gap-3 text-sm border-t border-[var(--line)] pt-4">
-        <Stat label="Starting gravity" value={isEmpty ? "—" : sg.toFixed(3)} />
-        <Stat label="Est. final gravity" value={isEmpty ? "—" : estFG.toFixed(3)} />
-        <Stat label="Est. ABV" value={isEmpty ? "—" : `${estABV.toFixed(1)}%`} />
+      <div className="grid gap-1 border-t border-[var(--line)] pt-4">
+        <p className="eyebrow text-[var(--ink-soft)]">
+          {gravitySource(draft) === "measured" ? "Measured" : "Recipe estimate"}
+        </p>
+        <div className="grid grid-cols-3 gap-3 text-sm">
+          <Stat
+            label={gravitySource(draft) === "measured" ? "Measured OG" : "Starting gravity"}
+            value={isEmpty ? "—" : sg.toFixed(3)}
+          />
+          <Stat label="Est. final gravity" value={isEmpty ? "—" : estFG.toFixed(3)} />
+          <Stat label="Est. ABV" value={isEmpty ? "—" : `${estABV.toFixed(1)}%`} />
+        </div>
+        <p className="text-xs text-[var(--muted)] mt-1">
+          {gravitySource(draft) === "measured"
+            ? "Using your hydrometer reading. FG and ABV are still estimates from yeast attenuation."
+            : "Estimated from the recipe. A hydrometer reading of your actual must is more accurate."}
+        </p>
       </div>
+
+      {!isEmpty ? (
+        <div className="border-t border-[var(--line)] pt-4">
+          <NutrientSchedule mead={draft} />
+        </div>
+      ) : null}
+
+      {!isEmpty
+        ? fermentationRisks(sg, YEASTS[draft.yeast]).map((r) => (
+            <p
+              key={r.kind}
+              className="text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-md px-3 py-2"
+            >
+              {r.message}
+            </p>
+          ))
+        : null}
 
       {headspace < vessel.capacityL * 0.05 && !isEmpty ? (
         <p className="text-sm text-red-800 bg-red-50 border border-red-300 rounded-md px-3 py-2">
