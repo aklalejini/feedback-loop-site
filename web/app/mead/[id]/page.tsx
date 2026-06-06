@@ -8,7 +8,7 @@ import { Timeline } from "@/components/Timeline";
 import { SpriteVessel } from "@/components/SpriteVessel";
 import { events } from "@/lib/analytics";
 import { deleteMead, getMead, upsertMead } from "@/lib/storage";
-import { fermentationRisks, project, YEASTS, type Mead, type Observation, type PhaseName } from "@/lib/mead";
+import { fermentationRisks, gravitySource, project, YEASTS, type Mead, type Observation, type PhaseName } from "@/lib/mead";
 
 export default function MeadDetailPage() {
   const params = useParams<{ id: string }>();
@@ -124,9 +124,14 @@ export default function MeadDetailPage() {
         </div>
         <div className="grid gap-4">
           <div className="grid gap-1">
-            <p className="eyebrow text-[var(--ink-soft)]">Recipe estimate</p>
+            <p className="eyebrow text-[var(--ink-soft)]">
+              {gravitySource(mead) === "measured" ? "Measured" : "Recipe estimate"}
+            </p>
             <div className="grid grid-cols-3 gap-3 text-sm">
-              <Stat label="Starting gravity" value={proj.startingGravity.toFixed(3)} />
+              <Stat
+                label={gravitySource(mead) === "measured" ? "Measured OG" : "Starting gravity"}
+                value={proj.startingGravity.toFixed(3)}
+              />
               <Stat label="Est. final gravity" value={proj.estFinalGravity.toFixed(3)} />
               <Stat label="Est. ABV" value={`${proj.estABV.toFixed(1)}%`} />
             </div>
