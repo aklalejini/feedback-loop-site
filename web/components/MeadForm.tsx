@@ -5,6 +5,7 @@ import {
   type HoneyType,
   type YeastStrain,
   type VesselKind,
+  type NitrogenNeed,
   HONEYS,
   YEASTS,
   VESSELS,
@@ -13,7 +14,11 @@ import {
   fermentationRisks,
   gravitySource,
 } from "@/lib/mead";
+import { defaultNitrogenNeed, NITROGEN_NEED_LABELS } from "@/lib/nutrients";
+import { NutrientSchedule } from "@/components/NutrientSchedule";
 import { SpriteVessel } from "@/components/SpriteVessel";
+
+const NITROGEN_OPTS: NitrogenNeed[] = ["low", "medium", "high"];
 
 interface Props {
   initial?: Mead;
@@ -184,6 +189,26 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             </div>
           </Field>
 
+          {/* Yeast nitrogen need (drives the nutrient schedule) */}
+          <Field label="Yeast nitrogen need (for nutrients)">
+            <div className="flex gap-2">
+              {NITROGEN_OPTS.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-pressed={(draft.nitrogenNeed ?? defaultNitrogenNeed(draft.yeast)) === n}
+                  onClick={() => update("nitrogenNeed", n)}
+                  className="opt px-3 py-1.5 text-xs font-semibold"
+                >
+                  {NITROGEN_NEED_LABELS[n]}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-[var(--muted)] mt-1">
+              Defaults from the yeast; adjust if you know its demand.
+            </p>
+          </Field>
+
           {/* Measured OG (optional override) */}
           <Field label="Measured OG (hydrometer, optional)" htmlFor="measuredOG">
             <div className="flex gap-2 items-center">
@@ -265,6 +290,12 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             : "Estimated from the recipe. A hydrometer reading of your actual must is more accurate."}
         </p>
       </div>
+
+      {!isEmpty ? (
+        <div className="border-t border-[var(--line)] pt-4">
+          <NutrientSchedule mead={draft} />
+        </div>
+      ) : null}
 
       {!isEmpty
         ? fermentationRisks(sg, YEASTS[draft.yeast]).map((r) => (
