@@ -22,6 +22,7 @@ interface Props {
 interface Meta {
   w: number;
   h: number;
+  headroom?: number;
   neck: { cx: number; y_top: number; y_bottom: number; width: number };
   interior: { x: number; y: number; w: number; h: number };
 }
@@ -32,7 +33,6 @@ interface Assets {
   meta: Meta;
 }
 
-// Module-level cache: each vessel kind's assets fetched once per page session.
 const cache: Record<string, Promise<Assets | null>> = {};
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -64,38 +64,73 @@ function loadAssets(vessel: VesselKind): Promise<Assets | null> {
   return cache[vessel];
 }
 
-interface PhaseViz {
-  bubbles: number;
-  speed: number;
-  airlock: boolean;
-  foamPx: number;
-  sedimentPx: number;
-}
+interface PhaseViz { bubbles: number; speed: number; airlock: boolean; foam: number; sediment: number }
 const PHASE_VIZ: Record<PhaseName, PhaseViz> = {
-  lag:          { bubbles: 4,  speed: 4.5, airlock: false, foamPx: 4,  sedimentPx: 3  },
-  primary:      { bubbles: 18, speed: 1.7, airlock: true,  foamPx: 12, sedimentPx: 6  },
-  secondary:    { bubbles: 8,  speed: 3,   airlock: true,  foamPx: 5,  sedimentPx: 10 },
-  conditioning: { bubbles: 2,  speed: 6,   airlock: false, foamPx: 2,  sedimentPx: 16 },
-  done:         { bubbles: 0,  speed: 0,   airlock: false, foamPx: 0,  sedimentPx: 20 },
+  lag:          { bubbles: 5,  speed: 4.5, airlock: false, foam: 0.05, sediment: 0.04 },
+  primary:      { bubbles: 16, speed: 1.8, airlock: true,  foam: 0.14, sediment: 0.07 },
+  secondary:    { bubbles: 7,  speed: 3,   airlock: true,  foam: 0.06, sediment: 0.13 },
+  conditioning: { bubbles: 2,  speed: 6,   airlock: false, foam: 0.02, sediment: 0.18 },
+  done:         { bubbles: 0,  speed: 0,   airlock: false, foam: 0,    sediment: 0.22 },
 };
 
+// ---------- colour helpers (HSL so amber stays luminous, never muddy) ----------
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-function toRGB(hex: string): [number, number, number] {
+
+function hexToHsl(hex: string): [number, number, number] {
   const n = parseInt(hex.replace("#", ""), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0;
+  const l = (max + min) / 2;
+  const d = max - min;
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  if (d !== 0) {
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  return [h, s, l];
 }
-function fromRGB(r: number, g: number, b: number): string {
-  return `#${[r, g, b].map((v) => clamp(Math.round(v), 0, 255).toString(16).padStart(2, "0")).join("")}`;
+function hslToHex(h: number, s: number, l: number): string {
+  h = ((h % 360) + 360) % 360; s = clamp(s, 0, 1); l = clamp(l, 0, 1);
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  const to = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, "0");
+  return `#${to(r)}${to(g)}${to(b)}`;
 }
-function shade(hex: string, amt: number): string {
-  const [r, g, b] = toRGB(hex);
-  return fromRGB(r + amt, g + amt, b + amt);
+function lift(hex: string, dL: number, dS = 0): string {
+  const [h, s, l] = hexToHsl(hex);
+  return hslToHex(h, s + dS, l + dL);
 }
-function blend(a: string, b: string, t: number): string {
-  const [r1, g1, b1] = toRGB(a);
-  const [r2, g2, b2] = toRGB(b);
-  return fromRGB(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t);
+
+interface Palette { top: string; body: string; deep: string; surface: string; foam: string; foamHi: string; sed: string }
+function paletteFor(honey: HoneyType): Palette {
+  const base = HONEYS[honey].color;
+  const [h, s, l] = hexToHsl(base);
+  // keep the body luminous; clamp lightness into a pleasant amber band
+  const bodyL = clamp(l, 0.46, 0.6);
+  const body = hslToHex(h, clamp(s * 1.06, 0, 1), bodyL);
+  return {
+    top: lift(body, 0.07, 0.02),
+    body,
+    deep: lift(body, -0.1, 0.02),       // gently deeper, NOT muddy
+    surface: lift(body, 0.16, -0.02),
+    foam: hslToHex(h, clamp(s * 0.45, 0, 0.4), 0.9),
+    foamHi: hslToHex(h, clamp(s * 0.3, 0, 0.3), 0.96),
+    sed: hslToHex(h, clamp(s * 0.7, 0, 1), clamp(bodyL - 0.16, 0.1, 0.5)),
+  };
 }
+
 function mulberry(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
@@ -127,112 +162,106 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
 
     const { sprite, mask, meta } = assets;
-    const honey = HONEYS[honeyType];
+    const pal = paletteFor(honeyType);
     const viz = PHASE_VIZ[phase];
     const capacity = VESSELS[vessel].capacityL;
     const fill = liters <= 0.01 ? 0 : clamp(liters / capacity, 0.06, 0.95);
     const hasLiquid = fill > 0;
 
+    const intX = meta.interior.x;
+    const intW = meta.interior.w;
     const intY1 = meta.interior.y + meta.interior.h;
     const liquidH = Math.round(fill * meta.interior.h);
     const liquidTop = intY1 - liquidH;
 
-    // -------- Static background layer: liquid + foam + sediment, clipped to mask --------
+    // ----- liquid layer (offscreen, smooth, then clipped to interior mask) -----
     const bg = document.createElement("canvas");
     bg.width = meta.w; bg.height = meta.h;
-    const bctx = bg.getContext("2d");
-    if (!bctx) return;
-    bctx.imageSmoothingEnabled = false;
+    const b = bg.getContext("2d")!;
+    b.imageSmoothingEnabled = true;
 
     if (hasLiquid) {
-      const base = honey.color;
-      const top = shade(base, 28);
-      const mid = base;
-      const bot = shade(base, -56);
+      // 1. base vertical gradient — luminous, only slightly deeper at the bottom
+      const vg = b.createLinearGradient(0, liquidTop, 0, intY1);
+      vg.addColorStop(0, pal.top);
+      vg.addColorStop(0.45, pal.body);
+      vg.addColorStop(1, pal.deep);
+      b.fillStyle = vg;
+      b.fillRect(intX - 4, liquidTop, intW + 8, liquidH + 4);
 
-      const grad = bctx.createLinearGradient(0, liquidTop, 0, intY1);
-      grad.addColorStop(0, top);
-      grad.addColorStop(0.5, mid);
-      grad.addColorStop(1, bot);
-      bctx.fillStyle = grad;
-      bctx.fillRect(0, liquidTop, meta.w, liquidH);
+      // 2. horizontal roundness — light from upper-left, edges fall off
+      const hg = b.createLinearGradient(intX, 0, intX + intW, 0);
+      hg.addColorStop(0.0, "rgba(60,30,0,0.20)");
+      hg.addColorStop(0.16, "rgba(0,0,0,0)");
+      hg.addColorStop(0.34, "rgba(255,250,235,0.16)");
+      hg.addColorStop(0.6, "rgba(0,0,0,0)");
+      hg.addColorStop(1.0, "rgba(50,25,0,0.26)");
+      b.fillStyle = hg;
+      b.fillRect(intX - 4, liquidTop, intW + 8, liquidH + 4);
 
-      // Krausen foam ring at the surface
-      const foamThk = Math.min(viz.foamPx, Math.floor(liquidH * 0.35));
-      if (foamThk > 0) {
-        bctx.fillStyle = blend(base, "#ffffff", 0.72);
-        bctx.fillRect(0, liquidTop, meta.w, foamThk);
-        // dithered foam texture
-        const rng = mulberry(seedFrom(`${vessel}|${honeyType}|foam`));
-        const drops = Math.round(foamThk * meta.w * 0.08);
-        bctx.fillStyle = blend(base, "#ffffff", 0.45);
-        for (let i = 0; i < drops; i++) {
-          bctx.fillRect(
-            Math.floor(rng() * meta.w),
-            liquidTop + Math.floor(rng() * foamThk),
-            1, 1,
-          );
-        }
-        // crisp foam edge
-        bctx.fillStyle = blend(base, "#ffffff", 0.28);
-        bctx.fillRect(0, liquidTop + foamThk - 1, meta.w, 1);
+      // 3. soft specular bloom on the upper-left of the body
+      const cxh = intX + intW * 0.34;
+      const cyh = liquidTop + liquidH * 0.26;
+      const rad = b.createRadialGradient(cxh, cyh, 2, cxh, cyh, intW * 0.5);
+      rad.addColorStop(0, "rgba(255,252,240,0.22)");
+      rad.addColorStop(1, "rgba(255,252,240,0)");
+      b.fillStyle = rad;
+      b.fillRect(intX - 4, liquidTop, intW + 8, liquidH * 0.7);
+
+      // 4. sediment — a soft band fading upward, never gritty
+      const sedH = Math.round(viz.sediment * liquidH);
+      if (sedH > 2) {
+        const sg = b.createLinearGradient(0, intY1 - sedH, 0, intY1);
+        sg.addColorStop(0, "rgba(0,0,0,0)");
+        sg.addColorStop(1, pal.sed);
+        b.fillStyle = sg;
+        b.fillRect(intX - 4, intY1 - sedH, intW + 8, sedH + 4);
       }
 
-      // Sediment / lees at the bottom of the cavity
-      const sedThk = Math.min(viz.sedimentPx, Math.floor(liquidH * 0.45));
-      if (sedThk > 0) {
-        const sedTop = intY1 - sedThk;
-        bctx.fillStyle = blend(base, "#2a1607", 0.7);
-        bctx.fillRect(0, sedTop, meta.w, sedThk);
-        const rng = mulberry(seedFrom(`${vessel}|${honeyType}|sed`));
-        const grains = Math.round(sedThk * meta.w * 0.15);
-        bctx.fillStyle = blend(base, "#3a2208", 0.55);
-        for (let i = 0; i < grains; i++) {
-          bctx.fillRect(
-            Math.floor(rng() * meta.w),
-            sedTop + Math.floor(rng() * sedThk),
-            1, 1,
-          );
-        }
+      // 5. krausen foam + meniscus at the surface
+      const foamH = Math.max(hasLiquid ? 2 : 0, Math.round(viz.foam * liquidH));
+      if (foamH >= 2) {
+        const fg = b.createLinearGradient(0, liquidTop, 0, liquidTop + foamH);
+        fg.addColorStop(0, pal.foamHi);
+        fg.addColorStop(1, pal.foam);
+        b.fillStyle = fg;
+        b.fillRect(intX - 4, liquidTop, intW + 8, foamH);
+        // soft shadow the foam casts on the liquid below
+        b.fillStyle = "rgba(60,35,5,0.12)";
+        b.fillRect(intX - 4, liquidTop + foamH, intW + 8, 2);
       }
+      // bright meniscus line on top of the liquid/foam
+      b.fillStyle = "rgba(255,253,245,0.55)";
+      b.fillRect(intX - 4, liquidTop, intW + 8, 1.5);
 
-      // Clip the liquid layer to the interior mask
-      bctx.globalCompositeOperation = "destination-in";
-      bctx.drawImage(mask, 0, 0);
-      bctx.globalCompositeOperation = "source-over";
+      // clip everything to the interior cavity
+      b.globalCompositeOperation = "destination-in";
+      b.drawImage(mask, 0, 0);
+      b.globalCompositeOperation = "source-over";
     }
 
-    // -------- Procedural cork + airlock at the neck (drawn once into bg) --------
-    drawCorkAndAirlock(bctx, meta, phase, hasLiquid);
+    const drawStopper = () => drawCorkAndAirlock(ctx, meta);
 
-    // -------- Sprite on top of liquid + cork --------
     const drawFrame = (t: number) => {
       ctx.clearRect(0, 0, meta.w, meta.h);
-      ctx.drawImage(bg, 0, 0);
-      ctx.drawImage(sprite, 0, 0);
-      // animated bubbles: drawn in a small layer then clipped to the interior mask
+      ctx.drawImage(bg, 0, 0);          // liquid (behind glass)
+      ctx.drawImage(sprite, 0, 0);      // the glass shell
       if (animated && hasLiquid && viz.bubbles > 0) {
-        const bubLayer = bubbleLayer(meta, liquidTop, intY1, viz, vessel, honeyType, phase, t);
-        // clip bubbles to the interior so they don't escape
-        bubLayer && ctx.drawImage(bubLayer, 0, 0);
+        drawBubbles(ctx, meta, liquidTop, intY1, viz, vessel, honeyType, phase, t);
       }
-      // airlock bubble overlay (drawn on top of everything; already inside the cork area)
-      if (animated && viz.airlock && hasLiquid) {
-        drawAirlockBubble(ctx, meta, t);
-      }
+      drawStopper();
+      if (animated && viz.airlock && hasLiquid) drawAirlockBubble(ctx, meta, t);
     };
 
     const reduced =
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     const noMotion = !animated || reduced || (viz.bubbles === 0 && !viz.airlock);
-    if (noMotion) {
-      drawFrame(0);
-      return;
-    }
+    if (noMotion) { drawFrame(0); return; }
 
     let raf = 0;
     const start = performance.now();
@@ -247,24 +276,18 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
   if (assets === "fallback") {
     return (
       <PixelVessel
-        vessel={vessel}
-        honeyType={honeyType}
-        liters={liters}
-        phase={phase}
-        size={size}
-        animated={animated}
-        className={className}
+        vessel={vessel} honeyType={honeyType} liters={liters}
+        phase={phase} size={size} animated={animated} className={className}
       />
     );
   }
 
   const meta = assets && typeof assets === "object" ? assets.meta : null;
   const w = meta?.w ?? 480;
-  const h = meta?.h ?? 360;
-  const aria =
-    liters <= 0.01
-      ? `Empty ${VESSELS[vessel].label}`
-      : `${VESSELS[vessel].label} of ${HONEYS[honeyType].label} mead`;
+  const h = meta?.h ?? 420;
+  const aria = liters <= 0.01
+    ? `Empty ${VESSELS[vessel].label}`
+    : `${VESSELS[vessel].label} of ${HONEYS[honeyType].label} mead`;
   return (
     <canvas
       ref={canvasRef}
@@ -278,112 +301,129 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
   );
 }
 
-function drawCorkAndAirlock(ctx: CanvasRenderingContext2D, meta: Meta, phase: PhaseName, hasLiquid: boolean) {
-  const { neck } = meta;
-  // cork sits IN the neck opening + slight overhang on top
-  const corkW = Math.max(neck.width + 6, 18);
-  const corkH = Math.max(12, Math.round(neck.width * 0.7));
-  const corkX = neck.cx - corkW / 2;
-  const corkY = neck.y_top - Math.round(corkH * 0.45);
-
-  // cork body
-  ctx.fillStyle = "#b07b43";
-  ctx.fillRect(corkX, corkY, corkW, corkH);
-  // top edge
-  ctx.fillStyle = "#7c5128";
-  ctx.fillRect(corkX, corkY, corkW, 2);
-  ctx.fillRect(corkX, corkY + corkH - 2, corkW, 2);
-  // simple dither
-  const rng = mulberry(seedFrom(`cork|${meta.w}`));
-  ctx.fillStyle = "#c89058";
-  const flecks = Math.round(corkW * corkH * 0.04);
-  for (let i = 0; i < flecks; i++) {
-    ctx.fillRect(corkX + Math.floor(rng() * corkW), corkY + 2 + Math.floor(rng() * (corkH - 4)), 1, 1);
-  }
-
-  // airlock above the cork: 3-piece glass cylinder
-  const alW = Math.max(10, Math.round(corkW * 0.55));
-  const alH = Math.max(22, Math.round(corkH * 2.2));
-  const alX = neck.cx - Math.floor(alW / 2);
-  const alY = corkY - alH;
-  // body
-  ctx.fillStyle = "#dde9e4";
-  ctx.fillRect(alX, alY, alW, alH);
-  // water in the lower half
-  ctx.fillStyle = "#7fc6e0";
-  ctx.fillRect(alX, alY + Math.round(alH * 0.55), alW, Math.round(alH * 0.4));
-  // edges
-  ctx.fillStyle = "#2e2336";
-  ctx.fillRect(alX, alY, 1, alH);
-  ctx.fillRect(alX + alW - 1, alY, 1, alH);
-  ctx.fillRect(alX, alY, alW, 1);
-  ctx.fillRect(alX, alY + alH - 1, alW, 1);
-  // floating cap dividing water from air
-  ctx.fillStyle = "#9c947f";
-  ctx.fillRect(alX + 1, alY + Math.round(alH * 0.5), alW - 2, 1);
-  // vent stub on top
-  ctx.fillStyle = "#2e2336";
-  ctx.fillRect(neck.cx, alY - 3, 1, 3);
-  ctx.fillRect(neck.cx - 1, alY - 4, 3, 1);
-
-  // tube from cork into airlock
-  ctx.fillStyle = "#2e2336";
-  ctx.fillRect(neck.cx - 1, corkY - 1, 1, 1);
-  ctx.fillRect(neck.cx + 1, corkY - 1, 1, 1);
-  ctx.fillStyle = "#dde9e4";
-  ctx.fillRect(neck.cx, corkY - 1, 1, 1);
-
-  void phase; void hasLiquid;
+// ---- smooth cork + 3-piece airlock, drawn to match the painterly glass ----
+function rrect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
 }
 
-function bubbleLayer(
-  meta: Meta, liquidTop: number, liquidBottom: number, viz: PhaseViz,
-  vessel: VesselKind, honeyType: HoneyType, phase: PhaseName, t: number,
-): HTMLCanvasElement | null {
-  if (viz.bubbles === 0) return null;
-  const c = document.createElement("canvas");
-  c.width = meta.w; c.height = meta.h;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  const seed = seedFrom(`${vessel}|${honeyType}|${phase}|bub`);
-  const rng = mulberry(seed);
-  // freeze starting positions per bubble so they wiggle but don't jitter
-  const pad = Math.round(meta.interior.w * 0.18);
+function drawCorkAndAirlock(ctx: CanvasRenderingContext2D, meta: Meta) {
+  const { neck } = meta;
+  const cx = neck.cx;
+  const corkW = Math.max(neck.width + 8, 22);
+  const corkH = Math.max(16, Math.round(neck.width * 0.9));
+  const corkX = cx - corkW / 2;
+  const corkY = neck.y_top - Math.round(corkH * 0.55);
+
+  // cork body with vertical wood gradient
+  const cg = ctx.createLinearGradient(corkX, 0, corkX + corkW, 0);
+  cg.addColorStop(0, "#8a5a2c");
+  cg.addColorStop(0.4, "#c08a4e");
+  cg.addColorStop(0.65, "#b07b43");
+  cg.addColorStop(1, "#7c5128");
+  rrect(ctx, corkX, corkY, corkW, corkH, 3);
+  ctx.fillStyle = cg;
+  ctx.fill();
+  // rounded top cap
+  rrect(ctx, corkX - 1, corkY - 2, corkW + 2, 5, 2.5);
+  ctx.fillStyle = "#caa066";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(60,40,20,0.55)";
+  ctx.lineWidth = 1;
+  rrect(ctx, corkX, corkY, corkW, corkH, 3);
+  ctx.stroke();
+
+  // airlock: stem + chamber + cap, all glass
+  const alW = Math.max(12, Math.round(corkW * 0.5));
+  const alH = Math.max(26, Math.round(corkH * 2.4));
+  const alX = cx - alW / 2;
+  const alY = corkY - 4 - alH;
+
+  // stem
+  ctx.fillStyle = "rgba(210,228,222,0.95)";
+  ctx.fillRect(cx - 1.5, alY + alH - 2, 3, 8);
+  ctx.strokeStyle = "rgba(70,90,84,0.6)";
+  ctx.strokeRect(cx - 1.5, alY + alH - 2, 3, 8);
+
+  // chamber body (glass)
+  const gg = ctx.createLinearGradient(alX, 0, alX + alW, 0);
+  gg.addColorStop(0, "#acc7be");
+  gg.addColorStop(0.35, "#eaf3ef");
+  gg.addColorStop(1, "#bcd2c9");
+  rrect(ctx, alX, alY, alW, alH, alW / 2);
+  ctx.fillStyle = gg;
+  ctx.fill();
+  // blue water in the lower half
+  ctx.save();
+  rrect(ctx, alX, alY, alW, alH, alW / 2);
+  ctx.clip();
+  const wg = ctx.createLinearGradient(0, alY + alH * 0.5, 0, alY + alH);
+  wg.addColorStop(0, "#9bd3e6");
+  wg.addColorStop(1, "#6cbcd6");
+  ctx.fillStyle = wg;
+  ctx.fillRect(alX, alY + alH * 0.52, alW, alH * 0.42);
+  ctx.restore();
+  // floating cap line + outline + highlight
+  ctx.fillStyle = "rgba(120,112,96,0.8)";
+  ctx.fillRect(alX + 2, alY + alH * 0.5, alW - 4, 1.5);
+  ctx.strokeStyle = "rgba(70,90,84,0.65)";
+  ctx.lineWidth = 1;
+  rrect(ctx, alX, alY, alW, alH, alW / 2);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255,255,255,0.6)";
+  ctx.fillRect(alX + 2, alY + 3, 1.5, alH - 8);
+  // vent cap
+  ctx.fillStyle = "#cdd9d3";
+  rrect(ctx, cx - alW * 0.4, alY - 4, alW * 0.8, 5, 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(70,90,84,0.6)";
+  ctx.stroke();
+}
+
+function drawBubbles(
+  ctx: CanvasRenderingContext2D, meta: Meta, liquidTop: number, liquidBottom: number,
+  viz: PhaseViz, vessel: VesselKind, honeyType: HoneyType, phase: PhaseName, t: number,
+) {
+  const rng = mulberry(seedFrom(`${vessel}|${honeyType}|${phase}|b`));
+  const pad = meta.interior.w * 0.18;
   const x0 = meta.interior.x + pad;
   const x1 = meta.interior.x + meta.interior.w - pad;
-  const top = liquidTop + Math.min(14, (liquidBottom - liquidTop) * 0.15);
-  const bot = liquidBottom - Math.min(18, (liquidBottom - liquidTop) * 0.18);
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  const top = liquidTop + (liquidBottom - liquidTop) * 0.12;
+  const bot = liquidBottom - (liquidBottom - liquidTop) * 0.16;
   for (let i = 0; i < viz.bubbles; i++) {
-    const x = Math.round(x0 + rng() * (x1 - x0));
+    const x = x0 + rng() * (x1 - x0);
     const speed = viz.speed * (0.7 + rng() * 0.6);
     const off = rng();
-    const big = rng() > 0.78;
+    const r = rng() > 0.8 ? 2.4 : 1.4;
     const prog = ((t / speed) + off) % 1;
-    if (prog < 0.04 || prog > 0.96) continue;
-    const y = Math.round(bot + (top - bot) * prog);
-    const wob = Math.round(Math.sin((t + off * 6) * 3) * 1.5);
+    if (prog < 0.05 || prog > 0.95) continue;
+    const y = bot + (top - bot) * prog;
+    const wob = Math.sin((t + off * 6) * 2.5) * 2;
     const px = x + wob;
-    ctx.fillRect(px, y, 1, 1);
-    if (big) {
-      ctx.fillRect(px + 1, y, 1, 1);
-      ctx.fillRect(px, y - 1, 1, 1);
-    }
+    const g = ctx.createRadialGradient(px, y, 0, px, y, r);
+    g.addColorStop(0, "rgba(255,255,255,0.85)");
+    g.addColorStop(0.6, "rgba(255,255,255,0.35)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(px, y, r, 0, Math.PI * 2);
+    ctx.fill();
   }
-  return c;
 }
 
 function drawAirlockBubble(ctx: CanvasRenderingContext2D, meta: Meta, t: number) {
   const { neck } = meta;
-  const corkW = Math.max(neck.width + 6, 18);
-  const corkH = Math.max(12, Math.round(neck.width * 0.7));
-  const corkY = neck.y_top - Math.round(corkH * 0.45);
-  const alH = Math.max(22, Math.round(corkH * 2.2));
-  const alY = corkY - alH;
-  const wTop = alY + Math.round(alH * 0.55);
-  const wBot = alY + Math.round(alH * 0.92);
+  const cx = neck.cx;
+  const corkH = Math.max(16, Math.round(neck.width * 0.9));
+  const corkY = neck.y_top - Math.round(corkH * 0.55);
+  const alH = Math.max(26, Math.round(corkH * 2.4));
+  const alY = corkY - 4 - alH;
+  const wTop = alY + alH * 0.55;
+  const wBot = alY + alH * 0.9;
   const prog = (t / 1.4) % 1;
-  const y = Math.round(wBot + (wTop - wBot) * prog);
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(neck.cx, y, 1, 1);
+  const y = wBot + (wTop - wBot) * prog;
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  ctx.beginPath();
+  ctx.arc(cx, y, 1.6, 0, Math.PI * 2);
+  ctx.fill();
 }
