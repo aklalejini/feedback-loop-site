@@ -77,7 +77,7 @@ export default function MeadDetailPage() {
   if (editing) {
     return (
       <div className="grid gap-4">
-        <h1 className="text-2xl font-display font-semibold">Edit batch</h1>
+        <h1 className="text-3xl font-display">Edit batch</h1>
         <MeadForm
           initial={mead}
           onSubmit={handleEdit}
@@ -93,7 +93,7 @@ export default function MeadDetailPage() {
       <header className="flex justify-between items-start gap-4 flex-wrap">
         <div>
           <Link href="/" className="text-sm text-[var(--muted)] no-underline hover:underline">← All batches</Link>
-          <h1 className="text-3xl font-display font-semibold mt-1">{mead.name}</h1>
+          <h1 className="text-4xl font-display mt-1 leading-tight">{mead.name}</h1>
           <p className="text-sm text-[var(--muted)]">
             Started {new Date(mead.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}
           </p>
@@ -152,7 +152,7 @@ export default function MeadDetailPage() {
       </section>
 
       <section className="grid gap-3">
-        <h2 className="text-xl font-semibold">Observations</h2>
+        <h2 className="text-2xl font-display">Observations</h2>
         <ObservationLog
           observations={mead.observations}
           onAdd={addObservation}

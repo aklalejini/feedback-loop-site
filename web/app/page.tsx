@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MeadForm } from "@/components/MeadForm";
 import { PixelVessel } from "@/components/PixelVessel";
+import { Timeline } from "@/components/Timeline";
 import { events } from "@/lib/analytics";
 import { loadMeads, upsertMead } from "@/lib/storage";
 import { HONEYS, project, VESSELS, type Mead } from "@/lib/mead";
@@ -29,7 +30,7 @@ export default function HomePage() {
   return (
     <div className="grid gap-8">
       <section className="grid gap-3">
-        <h1 className="text-3xl font-display font-semibold">Plan and track your mead.</h1>
+        <h1 className="text-4xl sm:text-5xl font-display leading-tight">Plan and track your mead.</h1>
         <p className="text-[var(--muted)] max-w-2xl">
           Design a batch, get a projected fermentation timeline, log observations as it
           progresses. Nothing leaves your browser — your batches live in local storage on
@@ -39,7 +40,7 @@ export default function HomePage() {
 
       <section className="grid gap-3">
         <div className="flex justify-between items-baseline">
-          <h2 className="text-xl font-bold uppercase tracking-wide">Your batches</h2>
+          <h2 className="text-2xl font-display">Your batches</h2>
           {!creating ? (
             <button onClick={() => setCreating(true)} className="btn rounded-none px-4 py-2">
               New batch
@@ -58,35 +59,44 @@ export default function HomePage() {
         ) : null}
 
         {meads.length > 0 ? (
-          <ul className="grid sm:grid-cols-2 gap-4">
+          <ul className="grid gap-3">
             {meads.map((m) => {
               const proj = project(m);
               const ageDays = Math.floor(
                 (Date.now() - new Date(m.createdAt).getTime()) / 86400000,
               );
               return (
-                <li key={m.id} className="pixel-card rounded-none p-4 hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform">
-                  <Link href={`/mead/${m.id}`} className="grid grid-cols-[56px,1fr] gap-3 no-underline text-[var(--ink)]">
+                <li
+                  key={m.id}
+                  className="pixel-card rounded-none p-4 hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
+                >
+                  <Link
+                    href={`/mead/${m.id}`}
+                    className="grid sm:grid-cols-[64px,minmax(0,220px),minmax(0,1fr)] gap-4 sm:gap-6 items-center no-underline text-[var(--ink)]"
+                  >
                     <PixelVessel
                       vessel={m.vessel}
                       honeyType={m.honeyType}
                       liters={m.waterL + m.honeyKg * 0.7}
                       phase={proj.currentPhase}
-                      size={56}
+                      size={64}
                       animated={false}
                     />
-                    <div className="grid gap-1 content-start">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <h3 className="font-bold text-lg leading-tight">{m.name}</h3>
-                        <span className="text-xs text-[var(--muted)] shrink-0">{ageDays}d in</span>
-                      </div>
-                      <p className="text-xs text-[var(--muted)]">
+                    <div className="grid gap-0.5 min-w-0">
+                      <h3 className="font-display text-xl leading-tight truncate">{m.name}</h3>
+                      <p className="text-xs text-[var(--muted)] truncate">
                         {HONEYS[m.honeyType].label} · {VESSELS[m.vessel].label} · {m.yeast}
                       </p>
-                      <div className="flex gap-4 text-sm">
-                        <span>Phase: <strong>{proj.currentPhase}</strong></span>
-                        <span>ABV: <strong>{proj.estABV.toFixed(1)}%</strong></span>
-                      </div>
+                      <p className="text-xs mt-1">
+                        <strong className="capitalize">{proj.currentPhase}</strong>
+                        <span className="text-[var(--muted)]"> · </span>
+                        {proj.estABV.toFixed(1)}% ABV
+                        <span className="text-[var(--muted)]"> · </span>
+                        {ageDays}d in
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <Timeline projection={proj} />
                     </div>
                   </Link>
                 </li>

@@ -16,7 +16,7 @@ const config: Config = {
         ink: "#34243f",
       },
       fontFamily: {
-        display: ["ui-sans-serif", "system-ui", "sans-serif"],
+        display: ['var(--font-display)', "ui-sans-serif", "system-ui", "sans-serif"],
       },
       boxShadow: {
         pixel: "4px 4px 0 0 #34243f",
