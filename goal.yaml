@@ -1,74 +1,136 @@
-version: 1
+version: 2
 created: 2026-06-06
 last_updated: 2026-06-06
 
+history:
+  - version: 1
+    date: 2026-06-06
+    summary: >
+      Initial contract. Mission: a low-friction mead batch planner + tracker as
+      the testbed for the self-improving feedback loop. Primary metric:
+      engaged_sessions. Anti-goals included "no analytics beyond Plausible".
+  - version: 2
+    date: 2026-06-06
+    summary: >
+      Reframed around the "decision layer over fermentation knowledge" model
+      (docs/strategy/plant-by-zip-lessons.md) and grounded the tool in the
+      sourced research brief (docs/research/mead-fermentation.md). Sharpened the
+      engaged-sessions definition to decision-layer actions; added
+      retention/conversion + discovery metrics; permitted Google Search Console
+      (SEO webmaster tool) alongside Plausible; added trust/accuracy + safety
+      constraints; widened scope to a knowledge base + crawlable content while
+      keeping the no-wall / no-dark-pattern guarantees; added a 4th ship reason
+      for factual/safety fixes.
+
 mission: >
-  A simple, low-friction interactive tool that lets home mead-makers design a
-  virtual batch (honey, water, yeast, vessel, optional spices/fruit), see a
-  projected fermentation timeline rendered as an evolving visual, and update
-  the projection by logging real observations as fermentation progresses.
-  The site improves itself daily through a multi-agent feedback loop graded
-  against this goal.
+  A personalized decision layer for home mead-makers: design a batch, get
+  honest data-backed projections (gravity, ABV, nutrient schedule, fermentation
+  timeline, risks), track it with real readings, and return at the right
+  fermentation moments — backed by a trustworthy, sourced knowledge base of
+  yeasts, honeys, styles, faults, and process. The site is also the testbed for
+  a daily multi-agent feedback loop; everything is prioritized against this goal.
 
 audience:
   primary: "Home mead-makers planning or tracking 1-5 gallon batches"
-  context: "Hobbyists who already know they want to make mead; not for cocktail drinkers, not for commercial meaderies"
+  secondary: "Beginners researching how to make mead, and makers troubleshooting a batch"
+  not_for: "Commercial meaderies / regulatory label ABV; cocktail drinkers"
 
 primary_metric:
   name: engaged_sessions
   definition: >
-    Sessions that complete at least one of:
-      (a) create a mead batch,
-      (b) log an observation on an existing batch,
-      (c) view a saved batch detail page,
+    Sessions that take at least one decision-layer action:
+      (a) create/plan a batch,
+      (b) log an observation/reading,
+      (c) complete a calculator (ABV, honey-to-gravity, nutrient, backsweetening),
+      (d) view a saved batch or a knowledge-base entity page,
     OR remain active >30s with more than one meaningful interaction.
   source: plausible
   target_lift_per_cycle: 0.05   # 5% lift bar; see change_threshold
 
 secondary_metrics:
   - name: batch_creation_rate
-    definition: "unique visitors who create at least one batch / unique visitors"
+    definition: "unique visitors who create >=1 batch / unique visitors"
     source: plausible
-  - name: return_visit_rate
+  - name: calculator_completion_rate
+    definition: "calculator completions / calculator starts"
+    source: plausible (custom event)
+  - name: observations_per_batch
+    definition: "mean observation logs per saved batch (the tracking loop)"
+    source: plausible (custom event)
+  - name: return_visit_rate_7d
     definition: "% of visitors with a saved batch who return within 7 days"
     source: plausible
-  - name: observations_per_batch
-    definition: "mean count of observation logs per saved batch"
-    source: plausible (custom event)
   - name: time_to_first_batch
     definition: "median seconds from landing to first batch saved"
     source: plausible (custom event)
 
+discovery_metrics:
+  - name: search_impressions
+    definition: "Google impressions for indexed tool/knowledge pages"
+    source: search_console
+  - name: search_clicks
+    definition: "Google clicks to the site"
+    source: search_console
+  note: >
+    Discovery is a growth indicator, not the primary metric. Build conversion +
+    measurement before scaling traffic (Plant by ZIP lesson).
+
 constraints:
-  - "Usable without account, signup, or email"
-  - "All batch data stored client-side (localStorage) in v1; no server-side PII"
-  - "WCAG AA contrast; forms keyboard-operable; respects prefers-reduced-motion"
-  - "First Contentful Paint < 2s on cable; < 4s on slow 3G"
-  - "Code stays readable for AI agents: typed, small modules, no clever indirection"
+  - "Usable without account, signup, or email for every core tool action"
+  - "Batch data stored client-side (localStorage) until cross-device sync is justified; no server-side PII without a clear reason"
+  - "Trust: every user-facing technical claim is traceable to docs/research; show source / last-reviewed where it matters"
+  - "Honesty: label confidence (measured > tracked > recipe-estimated > biological); prefer measured readings; never imply airlock activity proves completion"
+  - "Safety: warn before backsweetening/bottling sweet mead; completion is stable gravity, not bubbling"
+  - "Calculator outputs must fall in plausible ranges (validate); never expose placeholder/internal/QA language to users"
+  - "WCAG AA contrast; keyboard-operable; respects prefers-reduced-motion"
+  - "Mobile is first-class: large tappable inputs, key output near input, no horizontal overflow outside framed tables"
+  - "FCP < 2s on cable / < 4s on slow 3G; code stays typed, small-module, agent-readable"
 
 anti_goals:
   - "No dark patterns, fake urgency, popup nags, or manufactured streaks"
-  - "No required signup or email wall for any core tool action"
-  - "No third-party ad networks or analytics beyond the one chosen tool (Plausible)"
-  - "No feature creep outside the tool's core job (no comments, no social feed, no unrelated content)"
+  - "No required signup or email wall for any core tool action (email/affiliate are opt-in and disclosed)"
+  - "No third-party ad networks and no behavioral trackers beyond Plausible; Google Search Console (SEO/webmaster) is permitted; GA4 is not (revisit explicitly if ever needed)"
+  - "No feature creep outside the decision-layer job (no comments, social feed, or unrelated content); a sourced knowledge base + calculators ARE in scope"
+  - "Never present community protocols (e.g. TOSNA) as universal scientific law; never overstate precision or imply label/commercial ABV certification"
 
 allowed_future_monetization:
-  - what: "Affiliate links to supplies and ingredients"
+  - what: "Affiliate links to supplies/ingredients (equipment checklists, recipe shopping lists, tool output)"
     rules:
-      - "Must be visibly disclosed inline"
-      - "No third-party tracking pixels; link only"
-      - "Cannot be added if it materially degrades primary metric"
+      - "visibly disclosed inline"
+      - "no third-party tracking pixels; link only"
+      - "subtle, practical wording (not 'Buy now')"
+      - "cannot materially degrade the primary metric"
+  - what: "Opt-in email: saved-batch delivery + fermentation-stage reminders"
+    rules:
+      - "never a wall or required for tool use"
+      - "clear unsubscribe; value-first (the maker's own schedule)"
+  - what: "Premium saved-plan / cellar-tracker features"
+    rules:
+      - "core planning + tracking stays free and account-free"
+
+product_surface:
+  note: "Intended decision-layer surfaces. Sequencing is decided by the loop against this goal, not assumed up front."
+  tools: ["batch planner", "ABV calculator", "honey-to-gravity", "nutrient schedule (TOSNA/YAN)", "backsweetening", "yeast selector", "troubleshooting"]
+  knowledge: ["yeast strains", "honey varietals", "mead styles", "fermentation faults", "process guides", "recipes"]
+  content_hubs: ["beginner", "calculators", "yeast", "honey", "troubleshooting", "styles", "recipes"]
 
 change_threshold:
   rule: >
     A proposed change ships only if it clears AT LEAST ONE of:
       (a) estimated lift on primary_metric >= 5%, with stated reasoning, OR
       (b) fixes a clearly-broken UX state (error, broken affordance, regression), OR
-      (c) fixes an accessibility violation (WCAG AA or worse).
-  rationale: "Prevents low-impact churn from agent suggestions; forces the loop to fight for shipped changes."
+      (c) fixes an accessibility violation (WCAG AA or worse), OR
+      (d) fixes a factual/accuracy or safety error (traceable to docs/research).
+  rationale: >
+    Prevents low-impact churn from agent suggestions, while never gating an
+    accuracy or safety fix on a traffic estimate.
 
 cycle_limits:
   max_changes_per_cycle: 3
   max_lines_changed_per_change: 200
   require_human_approval: true
   branch_per_change: true        # rollback = revert the branch / PR
+
+reference:
+  - docs/research/mead-fermentation.md
+  - docs/strategy/plant-by-zip-lessons.md
