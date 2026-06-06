@@ -2,9 +2,12 @@
 
 For each entry in JOBS:
   in:  web/public/vessels/raw/<source filename>
-  out: web/public/vessels/<kind>.png           - RGBA sprite, background transparent
-       web/public/vessels/<kind>.mask.png      - 8-bit alpha, interior cavity only
-       web/public/vessels/<kind>.meta.json     - neck position, content bbox, scale
+  out: web/public/vessels/<kind>.png           - RGBA glass shell (full art kept;
+                                                  only background + handle hole
+                                                  are transparent). Composited
+                                                  over the liquid with MULTIPLY.
+       web/public/vessels/<kind>.mask.png      - interior cavity (clips liquid)
+       web/public/vessels/<kind>.meta.json     - bg colour, neck, interior, fill
 
 The sprite + mask are downsampled to MAX_W wide so they don't bloat the bundle.
 SpriteVessel.tsx reads these at runtime.
@@ -18,6 +21,7 @@ import numpy as np
 from PIL import Image
 from scipy.ndimage import (
     binary_closing,
+    binary_dilation,
     binary_fill_holes,
     label as cc_label,
 )
@@ -92,9 +96,21 @@ def process(src_path: Path, kind: str) -> dict:
         interior_mask = (interior_labeled == sizes.argmax())
         interior_mask = binary_fill_holes(interior_mask)
 
-    # Build RGBA sprite: vessel pixels keep their colour; BG becomes transparent.
-    # Interior cavity is also made transparent so the liquid layer shows through.
-    alpha = np.where(vessel_mask & ~interior_mask, 255, 0).astype(np.uint8)
+    # Build RGBA sprite: KEEP the entire glass (tint, highlights, ribs, shading)
+    # so it can be composited over the liquid with a multiply blend. Only the
+    # exterior background and any enclosed background pockets (e.g. the hole in
+    # the jug handle) become transparent. We do NOT carve the interior cavity —
+    # carving it was what destroyed the glass art.
+    enclosed_bg = (dist < 38) & vessel_mask  # cream pixels inside the silhouette
+    holes = enclosed_bg & ~binary_dilation(interior_mask, iterations=5)
+    # keep only reasonably-sized holes (the handle loop), drop stray speckle
+    holes_lbl, _ = cc_label(holes)
+    hsizes = np.bincount(holes_lbl.ravel())
+    hsizes[0] = 0
+    keep_holes = np.zeros_like(holes)
+    for lab in np.where(hsizes > 40)[0]:
+        keep_holes |= (holes_lbl == lab)
+    alpha = np.where(vessel_mask & ~keep_holes, 255, 0).astype(np.uint8)
     rgba = np.concatenate([arr, alpha[..., None]], axis=2)
 
     # Detect neck opening: scan from the top of the vessel mask, find the
@@ -175,6 +191,7 @@ def process(src_path: Path, kind: str) -> dict:
         "w": w,
         "h": h + HEADROOM,
         "headroom": HEADROOM,
+        "bg": [int(bg[0]), int(bg[1]), int(bg[2])],
         "neck": {
             "cx": neck_cx,
             "y_top": neck_top + HEADROOM,

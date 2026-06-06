@@ -23,6 +23,7 @@ interface Meta {
   w: number;
   h: number;
   headroom?: number;
+  bg?: [number, number, number];
   neck: { cx: number; y_top: number; y_bottom: number; width: number };
   interior: { x: number; y: number; w: number; h: number };
   fill?: { top: number; bottom: number; x: number; w: number };
@@ -188,82 +189,105 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
     const liquidH = Math.round(fill * fillRange);
     const liquidTop = intY1 - liquidH;
 
-    // ----- liquid layer (offscreen, smooth, then clipped to interior mask) -----
-    const bg = document.createElement("canvas");
-    bg.width = meta.w; bg.height = meta.h;
-    const b = bg.getContext("2d")!;
-    b.imageSmoothingEnabled = true;
+    const bgRGB = meta.bg ?? [253, 253, 253];
+    const bgHex = `rgb(${bgRGB[0]},${bgRGB[1]},${bgRGB[2]})`;
+
+    // ----- 1. base: the silhouette filled with the art's background colour,
+    // with the liquid painted into the cavity. Multiplying the glass over this
+    // reproduces the original art everywhere the glass is "clear", and shows the
+    // mead through it where there's liquid. -----
+    const base = document.createElement("canvas");
+    base.width = meta.w; base.height = meta.h;
+    const bx = base.getContext("2d")!;
+    bx.imageSmoothingEnabled = true;
+    // silhouette shape from the glass alpha, recoloured to the bg
+    bx.drawImage(sprite, 0, 0);
+    bx.globalCompositeOperation = "source-in";
+    bx.fillStyle = bgHex;
+    bx.fillRect(0, 0, meta.w, meta.h);
+    bx.globalCompositeOperation = "source-over";
 
     if (hasLiquid) {
-      // 1. base vertical gradient — luminous, only slightly deeper at the bottom
-      const vg = b.createLinearGradient(0, liquidTop, 0, intY1);
+      // liquid drawn on its own layer, then clipped to the cavity mask
+      const liq = document.createElement("canvas");
+      liq.width = meta.w; liq.height = meta.h;
+      const l = liq.getContext("2d")!;
+      l.imageSmoothingEnabled = true;
+
+      const vg = l.createLinearGradient(0, liquidTop, 0, intY1);
       vg.addColorStop(0, pal.top);
       vg.addColorStop(0.45, pal.body);
       vg.addColorStop(1, pal.deep);
-      b.fillStyle = vg;
-      b.fillRect(intX - 4, liquidTop, intW + 8, liquidH + 4);
+      l.fillStyle = vg;
+      l.fillRect(intX - 6, liquidTop, intW + 12, liquidH + 6);
 
-      // 2. horizontal roundness — light from upper-left, edges fall off
-      const hg = b.createLinearGradient(intX, 0, intX + intW, 0);
-      hg.addColorStop(0.0, "rgba(60,30,0,0.20)");
+      // horizontal roundness — light from upper-left, edges fall off
+      const hg = l.createLinearGradient(intX, 0, intX + intW, 0);
+      hg.addColorStop(0.0, "rgba(60,30,0,0.18)");
       hg.addColorStop(0.16, "rgba(0,0,0,0)");
-      hg.addColorStop(0.34, "rgba(255,250,235,0.16)");
+      hg.addColorStop(0.34, "rgba(255,250,235,0.14)");
       hg.addColorStop(0.6, "rgba(0,0,0,0)");
-      hg.addColorStop(1.0, "rgba(50,25,0,0.26)");
-      b.fillStyle = hg;
-      b.fillRect(intX - 4, liquidTop, intW + 8, liquidH + 4);
+      hg.addColorStop(1.0, "rgba(50,25,0,0.24)");
+      l.fillStyle = hg;
+      l.fillRect(intX - 6, liquidTop, intW + 12, liquidH + 6);
 
-      // 3. soft specular bloom on the upper-left of the body
+      // soft specular bloom on the upper-left
       const cxh = intX + intW * 0.34;
       const cyh = liquidTop + liquidH * 0.26;
-      const rad = b.createRadialGradient(cxh, cyh, 2, cxh, cyh, intW * 0.5);
-      rad.addColorStop(0, "rgba(255,252,240,0.22)");
+      const rad = l.createRadialGradient(cxh, cyh, 2, cxh, cyh, intW * 0.5);
+      rad.addColorStop(0, "rgba(255,252,240,0.2)");
       rad.addColorStop(1, "rgba(255,252,240,0)");
-      b.fillStyle = rad;
-      b.fillRect(intX - 4, liquidTop, intW + 8, liquidH * 0.7);
+      l.fillStyle = rad;
+      l.fillRect(intX - 6, liquidTop, intW + 12, liquidH * 0.7);
 
-      // 4. sediment — a soft band fading upward, never gritty
+      // sediment — soft band fading upward
       const sedH = Math.round(viz.sediment * liquidH);
       if (sedH > 2) {
-        const sg = b.createLinearGradient(0, intY1 - sedH, 0, intY1);
+        const sg = l.createLinearGradient(0, intY1 - sedH, 0, intY1);
         sg.addColorStop(0, "rgba(0,0,0,0)");
         sg.addColorStop(1, pal.sed);
-        b.fillStyle = sg;
-        b.fillRect(intX - 4, intY1 - sedH, intW + 8, sedH + 4);
+        l.fillStyle = sg;
+        l.fillRect(intX - 6, intY1 - sedH, intW + 12, sedH + 6);
       }
 
-      // 5. krausen foam + meniscus at the surface
-      const foamH = Math.max(hasLiquid ? 2 : 0, Math.round(viz.foam * liquidH));
+      // krausen foam + meniscus
+      const foamH = Math.max(2, Math.round(viz.foam * liquidH));
       if (foamH >= 2) {
-        const fg = b.createLinearGradient(0, liquidTop, 0, liquidTop + foamH);
+        const fg = l.createLinearGradient(0, liquidTop, 0, liquidTop + foamH);
         fg.addColorStop(0, pal.foamHi);
         fg.addColorStop(1, pal.foam);
-        b.fillStyle = fg;
-        b.fillRect(intX - 4, liquidTop, intW + 8, foamH);
-        // soft shadow the foam casts on the liquid below
-        b.fillStyle = "rgba(60,35,5,0.12)";
-        b.fillRect(intX - 4, liquidTop + foamH, intW + 8, 2);
+        l.fillStyle = fg;
+        l.fillRect(intX - 6, liquidTop, intW + 12, foamH);
+        l.fillStyle = "rgba(60,35,5,0.12)";
+        l.fillRect(intX - 6, liquidTop + foamH, intW + 12, 2);
       }
-      // bright meniscus line on top of the liquid/foam
-      b.fillStyle = "rgba(255,253,245,0.55)";
-      b.fillRect(intX - 4, liquidTop, intW + 8, 1.5);
+      l.fillStyle = "rgba(255,253,245,0.5)";
+      l.fillRect(intX - 6, liquidTop, intW + 12, 1.5);
 
-      // clip everything to the interior cavity
-      b.globalCompositeOperation = "destination-in";
-      b.drawImage(mask, 0, 0);
-      b.globalCompositeOperation = "source-over";
+      // clip the liquid to the cavity, then lay it over the cream base
+      l.globalCompositeOperation = "destination-in";
+      l.drawImage(mask, 0, 0);
+      bx.drawImage(liq, 0, 0);
     }
 
-    const drawStopper = () => drawCorkAndAirlock(ctx, meta);
+    // ----- 2. static composite: multiply the glass art over the base, then the
+    // procedural cork + airlock on top. Built once; only bubbles animate. -----
+    const still = document.createElement("canvas");
+    still.width = meta.w; still.height = meta.h;
+    const sx = still.getContext("2d")!;
+    sx.imageSmoothingEnabled = true;
+    sx.drawImage(base, 0, 0);
+    sx.globalCompositeOperation = "multiply";
+    sx.drawImage(sprite, 0, 0);
+    sx.globalCompositeOperation = "source-over";
+    drawCorkAndAirlock(sx, meta);
 
     const drawFrame = (t: number) => {
       ctx.clearRect(0, 0, meta.w, meta.h);
-      ctx.drawImage(bg, 0, 0);          // liquid (behind glass)
-      ctx.drawImage(sprite, 0, 0);      // the glass shell
+      ctx.drawImage(still, 0, 0);
       if (animated && hasLiquid && viz.bubbles > 0) {
         drawBubbles(ctx, intX, intW, liquidTop, intY1, viz, vessel, honeyType, phase, t);
       }
-      drawStopper();
       if (animated && viz.airlock && hasLiquid) drawAirlockBubble(ctx, meta, t);
     };
 
