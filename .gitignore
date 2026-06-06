@@ -1,0 +1,43 @@
+# deps
+node_modules/
+.pnp
+.pnp.js
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.eggs/
+*.egg-info/
+
+# build output
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# test / coverage
+coverage/
+.pytest_cache/
+.vitest/
+
+# agent runtime artifacts
+agents/.cache/
+agents/screenshots/*.png
+!agents/screenshots/.gitkeep
+
+# cycle artifacts: keep the manifest, not the raw screenshots
+cycles/**/screenshots/
+cycles/**/raw/

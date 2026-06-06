@@ -1,0 +1,74 @@
+version: 1
+created: 2026-06-06
+last_updated: 2026-06-06
+
+mission: >
+  A simple, low-friction interactive tool that lets home mead-makers design a
+  virtual batch (honey, water, yeast, vessel, optional spices/fruit), see a
+  projected fermentation timeline rendered as an evolving visual, and update
+  the projection by logging real observations as fermentation progresses.
+  The site improves itself daily through a multi-agent feedback loop graded
+  against this goal.
+
+audience:
+  primary: "Home mead-makers planning or tracking 1-5 gallon batches"
+  context: "Hobbyists who already know they want to make mead; not for cocktail drinkers, not for commercial meaderies"
+
+primary_metric:
+  name: engaged_sessions
+  definition: >
+    Sessions that complete at least one of:
+      (a) create a mead batch,
+      (b) log an observation on an existing batch,
+      (c) view a saved batch detail page,
+    OR remain active >30s with more than one meaningful interaction.
+  source: plausible
+  target_lift_per_cycle: 0.05   # 5% lift bar; see change_threshold
+
+secondary_metrics:
+  - name: batch_creation_rate
+    definition: "unique visitors who create at least one batch / unique visitors"
+    source: plausible
+  - name: return_visit_rate
+    definition: "% of visitors with a saved batch who return within 7 days"
+    source: plausible
+  - name: observations_per_batch
+    definition: "mean count of observation logs per saved batch"
+    source: plausible (custom event)
+  - name: time_to_first_batch
+    definition: "median seconds from landing to first batch saved"
+    source: plausible (custom event)
+
+constraints:
+  - "Usable without account, signup, or email"
+  - "All batch data stored client-side (localStorage) in v1; no server-side PII"
+  - "WCAG AA contrast; forms keyboard-operable; respects prefers-reduced-motion"
+  - "First Contentful Paint < 2s on cable; < 4s on slow 3G"
+  - "Code stays readable for AI agents: typed, small modules, no clever indirection"
+
+anti_goals:
+  - "No dark patterns, fake urgency, popup nags, or manufactured streaks"
+  - "No required signup or email wall for any core tool action"
+  - "No third-party ad networks or analytics beyond the one chosen tool (Plausible)"
+  - "No feature creep outside the tool's core job (no comments, no social feed, no unrelated content)"
+
+allowed_future_monetization:
+  - what: "Affiliate links to supplies and ingredients"
+    rules:
+      - "Must be visibly disclosed inline"
+      - "No third-party tracking pixels; link only"
+      - "Cannot be added if it materially degrades primary metric"
+
+change_threshold:
+  rule: >
+    A proposed change ships only if it clears AT LEAST ONE of:
+      (a) estimated lift on primary_metric >= 5%, with stated reasoning, OR
+      (b) fixes a clearly-broken UX state (error, broken affordance, regression), OR
+      (c) fixes an accessibility violation (WCAG AA or worse).
+  rationale: "Prevents low-impact churn from agent suggestions; forces the loop to fight for shipped changes."
+
+cycle_limits:
+  max_changes_per_cycle: 3
+  max_lines_changed_per_change: 200
+  require_human_approval: true
+  branch_per_change: true        # rollback = revert the branch / PR
