@@ -68,8 +68,22 @@ def process(src_path: Path, kind: str) -> dict:
     dist = np.linalg.norm(arr.astype(float) - bg, axis=2)
     bg_close = dist < 36  # tight: only the flat background colour
 
-    # Background = the connected component of background pixels reachable from corners.
-    labeled, _ = cc_label(bg_close)
+    # The source art usually includes a soft grey drop-shadow under the vessel.
+    # It must be treated as background, otherwise it gets filled/painted and looks
+    # like spilled mead. The shadow is DESATURATED and MID-VALUE grey bordering the
+    # background; the glass is either tinted (saturated), dark (outline) or very
+    # bright (highlights/clear interior), so this band isolates the shadow. The
+    # enclosed cavity can't be reached by the corner flood through the dark outline,
+    # so it is never removed even if some interior pixels fall in the band.
+    mx = arr.max(axis=2).astype(float)
+    mn = arr.min(axis=2).astype(float)
+    val = mx / 255.0
+    sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1.0), 0.0)
+    shadowish = (sat < 0.10) & (val > 0.5) & (val < 0.93)
+    floodable = bg_close | shadowish
+
+    # Background/shadow = the floodable region reachable from the corners.
+    labeled, _ = cc_label(floodable)
     bg_labels = {
         int(labeled[0, 0]), int(labeled[0, w - 1]),
         int(labeled[h - 1, 0]), int(labeled[h - 1, w - 1]),

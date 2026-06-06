@@ -276,6 +276,8 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
     still.width = meta.w; still.height = meta.h;
     const sx = still.getContext("2d")!;
     sx.imageSmoothingEnabled = true;
+    // clean neutral ground shadow (the source art's baked shadow was removed)
+    drawGroundShadow(sx, intX + intW / 2, intY1, intW);
     sx.drawImage(base, 0, 0);
     sx.globalCompositeOperation = "multiply";
     sx.drawImage(sprite, 0, 0);
@@ -333,6 +335,25 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
       style={{ width: size, height: (size * h) / w, display: "block" }}
     />
   );
+}
+
+// soft elliptical ground shadow under the vessel
+function drawGroundShadow(ctx: CanvasRenderingContext2D, cx: number, baseY: number, bodyW: number) {
+  const rx = bodyW * 0.6;
+  const ry = Math.max(8, bodyW * 0.09);
+  const cy = baseY + ry * 0.45;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(1, ry / rx);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+  g.addColorStop(0, "rgba(46,35,54,0.28)");
+  g.addColorStop(0.6, "rgba(46,35,54,0.14)");
+  g.addColorStop(1, "rgba(46,35,54,0)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, 0, rx, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 // ---- smooth cork + 3-piece airlock, drawn to match the painterly glass ----
