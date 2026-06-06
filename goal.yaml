@@ -65,15 +65,16 @@ secondary_metrics:
     source: plausible (custom event)
 
 discovery_metrics:
-  - name: search_impressions
-    definition: "Google impressions for indexed tool/knowledge pages"
-    source: search_console
-  - name: search_clicks
-    definition: "Google clicks to the site"
-    source: search_console
   note: >
     Discovery is a growth indicator, not the primary metric. Build conversion +
     measurement before scaling traffic (Plant by ZIP lesson).
+  metrics:
+    - name: search_impressions
+      definition: "Google impressions for indexed tool/knowledge pages"
+      source: search_console
+    - name: search_clicks
+      definition: "Google clicks to the site"
+      source: search_console
 
 constraints:
   - "Usable without account, signup, or email for every core tool action"

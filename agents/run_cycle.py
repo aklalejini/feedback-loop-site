@@ -15,6 +15,7 @@ from datetime import date
 from pathlib import Path
 
 from manager.manager import synthesize
+from reviewers.domain_reviewer import review as domain_review
 from reviewers.ux_reviewer import review as ux_review
 from shared.analytics import fetch_snapshot
 from shared.goal import load_goal
@@ -69,14 +70,23 @@ def main() -> int:
         print(f"[cycle {today}] dry-run: skipping screenshot + LLM")
         screenshots = {}
         ux_findings = DRY_RUN_FINDINGS
+        domain_findings = {
+            "reviewer": "domain_reviewer", "model": "dry-run",
+            "url": "dry-run", "routes": ["home"], "findings": [],
+        }
     else:
         print(f"[cycle {today}] capturing screenshots…")
         screenshots = capture(args.url, args.routes, cycle_dir / "screenshots")
         print(f"[cycle {today}] running UX reviewer ({len(screenshots)} screenshots)…")
         ux_findings = ux_review(goal=goal, url=args.url, screenshots=screenshots)
+        print(f"[cycle {today}] running domain reviewer…")
+        domain_findings = domain_review(goal=goal, url=args.url, screenshots=screenshots)
 
     (cycle_dir / "findings" / "ux.json").write_text(
         json.dumps(ux_findings, indent=2), encoding="utf-8",
+    )
+    (cycle_dir / "findings" / "domain.json").write_text(
+        json.dumps(domain_findings, indent=2), encoding="utf-8",
     )
 
     analytics = fetch_snapshot()
@@ -107,7 +117,7 @@ def main() -> int:
         }
     else:
         print(f"[cycle {today}] running manager…")
-        changelist = synthesize(goal=goal, reviews=[ux_findings], analytics=analytics)
+        changelist = synthesize(goal=goal, reviews=[ux_findings, domain_findings], analytics=analytics)
 
     (cycle_dir / "changelist.json").write_text(
         json.dumps(changelist, indent=2), encoding="utf-8",
@@ -118,7 +128,7 @@ def main() -> int:
         "url": args.url,
         "routes": args.routes,
         "dry_run": args.dry_run,
-        "reviewers": ["ux_reviewer"],
+        "reviewers": ["ux_reviewer", "domain_reviewer"],
         "analytics_used": analytics is not None,
         "duration_seconds": round(time.time() - started, 2),
     }
