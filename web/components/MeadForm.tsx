@@ -11,7 +11,7 @@ import {
   startingGravity,
   blankMead,
 } from "@/lib/mead";
-import { PixelVessel } from "@/components/PixelVessel";
+import { SpriteVessel } from "@/components/SpriteVessel";
 
 interface Props {
   initial?: Mead;
@@ -61,7 +61,7 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
         {/* live pixel preview */}
         <div className="mx-auto sm:mx-0 sm:sticky sm:top-4 text-center">
           <div className="pixel-card-sm rounded-none p-3 inline-block bg-[var(--bg)]">
-            <PixelVessel
+            <SpriteVessel
               vessel={draft.vessel}
               honeyType={draft.honeyType}
               liters={totalL}
@@ -120,7 +120,7 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
                   onClick={() => changeVessel(v.kind as VesselKind)}
                   className="opt rounded-none p-2 flex flex-col items-center gap-1 text-center"
                 >
-                  <PixelVessel
+                  <SpriteVessel
                     vessel={v.kind as VesselKind}
                     honeyType={draft.honeyType}
                     liters={v.capacityL * 0.6}

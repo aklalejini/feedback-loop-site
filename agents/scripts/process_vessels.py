@@ -1,0 +1,180 @@
+"""Process raw vessel art into web-ready sprite + mask + metadata.
+
+For each entry in JOBS:
+  in:  web/public/vessels/raw/<source filename>
+  out: web/public/vessels/<kind>.png           - RGBA sprite, background transparent
+       web/public/vessels/<kind>.mask.png      - 8-bit alpha, interior cavity only
+       web/public/vessels/<kind>.meta.json     - neck position, content bbox, scale
+
+The sprite + mask are downsampled to MAX_W wide so they don't bloat the bundle.
+SpriteVessel.tsx reads these at runtime.
+"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import numpy as np
+from PIL import Image
+from scipy.ndimage import label as cc_label
+
+ROOT = Path(__file__).resolve().parents[2]
+RAW_DIR = ROOT / "web" / "public" / "vessels" / "raw"
+OUT_DIR = ROOT / "web" / "public" / "vessels"
+
+MAX_W = 480
+HEADROOM = 60  # transparent rows added above the vessel for the procedural airlock
+
+JOBS = [
+    {"src": "1 Gallon Jug Empty.png", "kind": "jug-1gal"},
+    {"src": "5 Gallon Jug Empty.png", "kind": "jug-5gal"},
+]
+
+
+def detect_bg_color(arr: np.ndarray) -> np.ndarray:
+    """Mean of the four corner pixels (10px sample)."""
+    h, w = arr.shape[:2]
+    s = 10
+    samples = np.concatenate([
+        arr[:s, :s, :3].reshape(-1, 3),
+        arr[:s, w - s:, :3].reshape(-1, 3),
+        arr[h - s:, :s, :3].reshape(-1, 3),
+        arr[h - s:, w - s:, :3].reshape(-1, 3),
+    ])
+    return samples.mean(axis=0)
+
+
+def process(src_path: Path, kind: str) -> dict:
+    im = Image.open(src_path).convert("RGB")
+    w0, h0 = im.size
+
+    # downsample early; nothing here needs the full resolution
+    if w0 > MAX_W:
+        ratio = MAX_W / w0
+        new_size = (MAX_W, round(h0 * ratio))
+        im = im.resize(new_size, Image.LANCZOS)
+    arr = np.array(im)
+    h, w = arr.shape[:2]
+
+    bg = detect_bg_color(arr)
+    dist = np.linalg.norm(arr.astype(float) - bg, axis=2)
+    bg_close = dist < 32  # cream-ish pixels (BG or interior cavity)
+
+    # Background = the connected component of "cream" pixels reachable from corners.
+    labeled, _ = cc_label(bg_close)
+    bg_labels = set(int(labeled[0, 0]) for _ in [0]) | {
+        int(labeled[0, w - 1]), int(labeled[h - 1, 0]), int(labeled[h - 1, w - 1])
+    }
+    bg_mask = np.isin(labeled, list(bg_labels))
+
+    # Vessel mask = the inverse (silhouette including any interior cream pocket).
+    vessel_mask = ~bg_mask
+
+    # Interior cavity = cream-coloured pixels INSIDE the vessel silhouette.
+    interior_candidate = vessel_mask & bg_close
+    interior_labeled, _ = cc_label(interior_candidate)
+    sizes = np.bincount(interior_labeled.ravel())
+    sizes[0] = 0
+    interior_mask = np.zeros_like(vessel_mask)
+    if sizes.size > 1 and sizes.max() > 0:
+        interior_mask = (interior_labeled == sizes.argmax())
+
+    # Build RGBA sprite: vessel pixels keep their colour; BG becomes transparent.
+    # Interior cavity is also made transparent so the liquid layer shows through.
+    alpha = np.where(vessel_mask & ~interior_mask, 255, 0).astype(np.uint8)
+    rgba = np.concatenate([arr, alpha[..., None]], axis=2)
+
+    # Detect neck opening: scan from the top of the vessel mask, find the
+    # first row that has the silhouette, then walk down until the run widens
+    # significantly. The narrow band is the neck.
+    rows_with_vessel = np.where(vessel_mask.any(axis=1))[0]
+    top_y = int(rows_with_vessel[0]) if rows_with_vessel.size else 0
+
+    def row_width(y: int) -> tuple[int, int]:
+        cols = np.where(vessel_mask[y])[0]
+        return (int(cols.min()), int(cols.max())) if cols.size else (0, 0)
+
+    neck_top = top_y
+    neck_w_top = row_width(top_y)[1] - row_width(top_y)[0]
+    # body width = widest row in the image
+    body_w = max(
+        row_width(y)[1] - row_width(y)[0]
+        for y in range(top_y, h, 8)
+    )
+    threshold = neck_w_top + (body_w - neck_w_top) * 0.4
+    neck_bottom = top_y
+    for y in range(top_y, h):
+        l, r = row_width(y)
+        if (r - l) > threshold:
+            neck_bottom = y
+            break
+    l_top, r_top = row_width(top_y)
+    neck_cx = (l_top + r_top) // 2
+    neck_w = max(8, r_top - l_top)
+
+    # Interior bbox
+    ys, xs = np.where(interior_mask)
+    if ys.size:
+        ibbox = {
+            "x": int(xs.min()), "y": int(ys.min()),
+            "w": int(xs.max() - xs.min() + 1),
+            "h": int(ys.max() - ys.min() + 1),
+        }
+    else:
+        ibbox = {"x": 0, "y": 0, "w": w, "h": h}
+
+    # Pad top with HEADROOM transparent rows so the procedural cork + airlock
+    # have somewhere to live above the imported vessel.
+    rgba_padded = np.zeros((h + HEADROOM, w, 4), dtype=np.uint8)
+    rgba_padded[HEADROOM:, :, :] = rgba
+    mask_a = (interior_mask.astype(np.uint8) * 255)
+    mask_padded = np.zeros((h + HEADROOM, w), dtype=np.uint8)
+    mask_padded[HEADROOM:, :] = mask_a
+
+    meta = {
+        "w": w,
+        "h": h + HEADROOM,
+        "headroom": HEADROOM,
+        "neck": {
+            "cx": neck_cx,
+            "y_top": neck_top + HEADROOM,
+            "y_bottom": neck_bottom + HEADROOM,
+            "width": neck_w,
+        },
+        "interior": {
+            "x": ibbox["x"],
+            "y": ibbox["y"] + HEADROOM,
+            "w": ibbox["w"],
+            "h": ibbox["h"],
+        },
+    }
+
+    sprite_path = OUT_DIR / f"{kind}.png"
+    mask_path = OUT_DIR / f"{kind}.mask.png"
+    meta_path = OUT_DIR / f"{kind}.meta.json"
+    Image.fromarray(rgba_padded, "RGBA").save(sprite_path, optimize=True)
+    # Save mask as RGBA with alpha = mask value, so canvas
+    # globalCompositeOperation = 'destination-in' clips properly.
+    mask_rgba = np.zeros((h + HEADROOM, w, 4), dtype=np.uint8)
+    mask_rgba[..., :3] = 255
+    mask_rgba[..., 3] = mask_padded
+    Image.fromarray(mask_rgba, "RGBA").save(mask_path, optimize=True)
+    meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    return meta
+
+
+def main() -> int:
+    for job in JOBS:
+        src = RAW_DIR / job["src"]
+        if not src.exists():
+            print(f"  skip {job['kind']} (no source: {src.name})")
+            continue
+        meta = process(src, job["kind"])
+        print(f"  {job['kind']:14}  {meta['w']}x{meta['h']}  "
+              f"neck cx={meta['neck']['cx']} w={meta['neck']['width']}  "
+              f"y_top={meta['neck']['y_top']} y_bottom={meta['neck']['y_bottom']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

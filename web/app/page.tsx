@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MeadForm } from "@/components/MeadForm";
-import { PixelVessel } from "@/components/PixelVessel";
+import { SpriteVessel } from "@/components/SpriteVessel";
 import { Timeline } from "@/components/Timeline";
 import { events } from "@/lib/analytics";
 import { loadMeads, upsertMead } from "@/lib/storage";
@@ -74,7 +74,7 @@ export default function HomePage() {
                     href={`/mead/${m.id}`}
                     className="grid sm:grid-cols-[64px,minmax(0,220px),minmax(0,1fr)] gap-4 sm:gap-6 items-center no-underline text-[var(--ink)]"
                   >
-                    <PixelVessel
+                    <SpriteVessel
                       vessel={m.vessel}
                       honeyType={m.honeyType}
                       liters={m.waterL + m.honeyKg * 0.7}
