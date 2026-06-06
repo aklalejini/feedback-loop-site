@@ -5,6 +5,7 @@ export type HoneyType = "clover" | "wildflower" | "orange_blossom" | "buckwheat"
 export type YeastStrain = "EC-1118" | "D-47" | "K1-V1116" | "71B-1122" | "Wyeast-4632" | "Bread";
 export type VesselKind = "jug-1gal" | "jug-5gal" | "bucket-5gal" | "demijohn-3gal";
 export type PhaseName = "lag" | "primary" | "secondary" | "conditioning" | "done";
+export type NitrogenNeed = "low" | "medium" | "high";
 
 export interface YeastInfo {
   strain: YeastStrain;
@@ -78,6 +79,9 @@ export interface Mead {
   // the recipe estimate as the source of truth for FG/ABV (docs/research:
   // "Prefer Measured OG").
   measuredOG?: number;
+  // Optional override for the yeast's nitrogen demand, used by the TOSNA
+  // nutrient schedule. Defaults from the strain when unset.
+  nitrogenNeed?: NitrogenNeed;
 }
 
 export interface Phase {
