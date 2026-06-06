@@ -10,6 +10,7 @@ import {
   VESSELS,
   startingGravity,
   blankMead,
+  fermentationRisks,
 } from "@/lib/mead";
 import { SpriteVessel } from "@/components/SpriteVessel";
 
@@ -210,11 +211,28 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
       </div>
 
       {/* stats */}
-      <div className="grid grid-cols-3 gap-3 text-sm border-t border-[var(--line)] pt-4">
-        <Stat label="Starting gravity" value={isEmpty ? "—" : sg.toFixed(3)} />
-        <Stat label="Est. final gravity" value={isEmpty ? "—" : estFG.toFixed(3)} />
-        <Stat label="Est. ABV" value={isEmpty ? "—" : `${estABV.toFixed(1)}%`} />
+      <div className="grid gap-1 border-t border-[var(--line)] pt-4">
+        <p className="eyebrow text-[var(--ink-soft)]">Recipe estimate</p>
+        <div className="grid grid-cols-3 gap-3 text-sm">
+          <Stat label="Starting gravity" value={isEmpty ? "—" : sg.toFixed(3)} />
+          <Stat label="Est. final gravity" value={isEmpty ? "—" : estFG.toFixed(3)} />
+          <Stat label="Est. ABV" value={isEmpty ? "—" : `${estABV.toFixed(1)}%`} />
+        </div>
+        <p className="text-xs text-[var(--muted)] mt-1">
+          Estimated from the recipe. A hydrometer reading of your actual must is more accurate.
+        </p>
       </div>
+
+      {!isEmpty
+        ? fermentationRisks(sg, YEASTS[draft.yeast]).map((r) => (
+            <p
+              key={r.kind}
+              className="text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-md px-3 py-2"
+            >
+              {r.message}
+            </p>
+          ))
+        : null}
 
       {headspace < vessel.capacityL * 0.05 && !isEmpty ? (
         <p className="text-sm text-red-800 bg-red-50 border border-red-300 rounded-md px-3 py-2">
