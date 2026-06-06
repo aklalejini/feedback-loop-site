@@ -1,14 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { MeadForm } from "@/components/MeadForm";
 import { SpriteVessel } from "@/components/SpriteVessel";
 import { Timeline } from "@/components/Timeline";
 import { events } from "@/lib/analytics";
 import { loadMeads, upsertMead } from "@/lib/storage";
-import { HONEYS, project, VESSELS, type Mead } from "@/lib/mead";
+import { HONEYS, project, sampleMead, VESSELS, type Mead } from "@/lib/mead";
 
 export default function HomePage() {
+  const router = useRouter();
   const [meads, setMeads] = useState<Mead[]>([]);
   const [creating, setCreating] = useState(false);
 
@@ -25,6 +27,13 @@ export default function HomePage() {
       vessel: mead.vessel,
       honey_type: mead.honeyType,
     });
+  }
+
+  function loadSample() {
+    const sample = sampleMead();
+    upsertMead(sample);
+    events.sampleLoaded();
+    router.push(`/mead/${sample.id}`);
   }
 
   return (
@@ -53,8 +62,24 @@ export default function HomePage() {
         ) : null}
 
         {meads.length === 0 && !creating ? (
-          <div className="pixel-card p-10 text-center text-[var(--muted)]">
-            No batches yet. Click <strong className="text-[var(--ink)]">New batch</strong> to design your first one.
+          <div className="pixel-card p-8 sm:p-10 grid gap-4 text-center">
+            <p className="text-[var(--muted)]">
+              No batches yet. Design your first by clicking{" "}
+              <strong className="text-[var(--ink)]">New batch</strong>,
+              or try a sample to see how the planner works.
+            </p>
+            <div>
+              <button
+                type="button"
+                onClick={loadSample}
+                className="btn-ghost px-4 py-2 text-sm"
+              >
+                Try a sample batch →
+              </button>
+            </div>
+            <p className="text-xs text-[var(--muted)]">
+              A clearly-labeled example you can delete anytime.
+            </p>
           </div>
         ) : null}
 
