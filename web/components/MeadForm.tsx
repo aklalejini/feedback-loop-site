@@ -16,6 +16,7 @@ import {
 } from "@/lib/mead";
 import { defaultNitrogenNeed, NITROGEN_NEED_LABELS } from "@/lib/nutrients";
 import { NutrientSchedule } from "@/components/NutrientSchedule";
+import { ProjectionStats } from "@/components/ProjectionStats";
 import { SpriteVessel } from "@/components/SpriteVessel";
 
 const NITROGEN_OPTS: NitrogenNeed[] = ["low", "medium", "high"];
@@ -272,23 +273,19 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
       </div>
 
       {/* stats */}
-      <div className="grid gap-1 border-t border-[var(--line)] pt-4">
-        <p className="eyebrow text-[var(--ink-soft)]">
-          {gravitySource(draft) === "measured" ? "Measured" : "Recipe estimate"}
-        </p>
-        <div className="grid grid-cols-3 gap-3 text-sm">
-          <Stat
-            label={gravitySource(draft) === "measured" ? "Measured OG" : "Starting gravity"}
-            value={isEmpty ? "—" : sg.toFixed(3)}
+      <div className="border-t border-[var(--line)] pt-4">
+        {isEmpty ? (
+          <p className="text-sm text-[var(--muted)]">
+            Add honey and water to see gravity, ABV, and a nutrient schedule.
+          </p>
+        ) : (
+          <ProjectionStats
+            startingGravity={sg}
+            estFinalGravity={estFG}
+            estABV={estABV}
+            source={gravitySource(draft)}
           />
-          <Stat label="Est. final gravity" value={isEmpty ? "—" : estFG.toFixed(3)} />
-          <Stat label="Est. ABV" value={isEmpty ? "—" : `${estABV.toFixed(1)}%`} />
-        </div>
-        <p className="text-xs text-[var(--muted)] mt-1">
-          {gravitySource(draft) === "measured"
-            ? "Using your hydrometer reading. FG and ABV are still estimates from yeast attenuation."
-            : "Estimated from the recipe. A hydrometer reading of your actual must is more accurate."}
-        </p>
+        )}
       </div>
 
       {!isEmpty ? (
@@ -362,15 +359,6 @@ function Slider({
         <span>{min} {unit}</span>
         <span>{max} {unit}</span>
       </div>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="grid gap-0.5">
-      <span className="eyebrow">{label}</span>
-      <span className="font-mono text-base">{value}</span>
     </div>
   );
 }
