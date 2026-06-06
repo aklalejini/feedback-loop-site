@@ -46,6 +46,20 @@ export function oneThirdBreakSG(og: number): number {
   return og - (og - 1) / 3;
 }
 
+export type AdditionStatus = "done" | "overdue" | "due" | "upcoming";
+
+// Status of a single scheduled nutrient addition, by calendar day (local).
+// "done" wins; otherwise compare the addition's day to today.
+export function nutrientAdditionStatus(atISO: string, now: Date, done: boolean): AdditionStatus {
+  if (done) return "done";
+  const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const at = dayStart(new Date(atISO));
+  const today = dayStart(now);
+  if (at < today) return "overdue";
+  if (at === today) return "due";
+  return "upcoming";
+}
+
 export interface NutrientAddition {
   label: string; // "24h after pitch", …
   at: string;    // ISO timestamp

@@ -82,6 +82,8 @@ export interface Mead {
   // Optional override for the yeast's nitrogen demand, used by the TOSNA
   // nutrient schedule. Defaults from the strain when unset.
   nitrogenNeed?: NitrogenNeed;
+  // Indices (0-3) of TOSNA nutrient additions the maker has marked as added.
+  nutrientsDone?: number[];
 }
 
 export interface Phase {

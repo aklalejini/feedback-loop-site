@@ -3,6 +3,7 @@ import { blankMead, type Mead } from "../lib/mead";
 import {
   defaultNitrogenNeed,
   NITROGEN_FACTORS,
+  nutrientAdditionStatus,
   oneThirdBreakSG,
   sgToBrix,
   tosnaSchedule,
@@ -92,5 +93,22 @@ describe("tosnaSchedule", () => {
   it("uses the stored nitrogenNeed when no override is given", () => {
     const m = meadFor({ honeyKg: 1.4, waterL: 3.0, nitrogenNeed: "high" });
     expect(tosnaSchedule(m)!.nitrogenNeed).toBe("high");
+  });
+});
+
+describe("nutrientAdditionStatus", () => {
+  const now = new Date("2026-06-10T12:00:00.000Z");
+  it("returns 'done' whenever marked done, regardless of date", () => {
+    expect(nutrientAdditionStatus("2026-06-01T00:00:00.000Z", now, true)).toBe("done");
+    expect(nutrientAdditionStatus("2026-06-20T00:00:00.000Z", now, true)).toBe("done");
+  });
+  it("returns 'overdue' for an earlier day not done", () => {
+    expect(nutrientAdditionStatus("2026-06-09T08:00:00.000Z", now, false)).toBe("overdue");
+  });
+  it("returns 'due' for the same calendar day", () => {
+    expect(nutrientAdditionStatus("2026-06-10T23:00:00.000Z", now, false)).toBe("due");
+  });
+  it("returns 'upcoming' for a future day", () => {
+    expect(nutrientAdditionStatus("2026-06-12T00:00:00.000Z", now, false)).toBe("upcoming");
   });
 });
