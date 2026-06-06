@@ -5,8 +5,10 @@
 :root {
   --bg: #ece0c4;
   --ink: #3a2a18;
-  --ink-soft: #5a4531;
-  --muted: #6f5b3c;
+  /* ink-soft / muted darkened for readable contrast on the parchment + cards
+     (>= ~4.5:1 for body, ~4:1 for small labels) — accessibility pass. */
+  --ink-soft: #4d3a25;
+  --muted: #5c4827;
   --line: #d3bd92;
   --line-soft: #e2d2ab;
   --card: #fbf4e3;
@@ -149,7 +151,7 @@ button, input, select, textarea { font: inherit; }
   box-shadow: inset 0 1px 2px rgba(58, 40, 16, 0.08);
   transition: border-color 0.08s ease, box-shadow 0.08s ease;
 }
-.in::placeholder { color: #a9966f; }
+.in::placeholder { color: #8a7448; }
 .in:focus {
   outline: none;
   border-color: var(--accent);

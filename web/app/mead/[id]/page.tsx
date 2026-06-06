@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { MeadForm } from "@/components/MeadForm";
 import { ObservationLog } from "@/components/ObservationLog";
 import { NutrientSchedule } from "@/components/NutrientSchedule";
+import { ProjectionStats } from "@/components/ProjectionStats";
 import { Timeline } from "@/components/Timeline";
 import { SpriteVessel } from "@/components/SpriteVessel";
 import { events } from "@/lib/analytics";
@@ -120,23 +121,16 @@ export default function MeadDetailPage() {
             honeyType={mead.honeyType}
             liters={mead.waterL + mead.honeyKg * 0.7}
             phase={previewPhase ?? proj.currentPhase}
-            size={200}
+            size={150}
           />
         </div>
         <div className="grid gap-4">
-          <div className="grid gap-1">
-            <p className="eyebrow text-[var(--ink-soft)]">
-              {gravitySource(mead) === "measured" ? "Measured" : "Recipe estimate"}
-            </p>
-            <div className="grid grid-cols-3 gap-3 text-sm">
-              <Stat
-                label={gravitySource(mead) === "measured" ? "Measured OG" : "Starting gravity"}
-                value={proj.startingGravity.toFixed(3)}
-              />
-              <Stat label="Est. final gravity" value={proj.estFinalGravity.toFixed(3)} />
-              <Stat label="Est. ABV" value={`${proj.estABV.toFixed(1)}%`} />
-            </div>
-          </div>
+          <ProjectionStats
+            startingGravity={proj.startingGravity}
+            estFinalGravity={proj.estFinalGravity}
+            estABV={proj.estABV}
+            source={gravitySource(mead)}
+          />
           {fermentationRisks(proj.startingGravity, YEASTS[mead.yeast]).map((r) => (
             <p
               key={r.kind}
@@ -184,15 +178,6 @@ export default function MeadDetailPage() {
           onDelete={removeObservation}
         />
       </section>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="grid gap-0.5">
-      <span className="eyebrow">{label}</span>
-      <span className="font-mono text-base">{value}</span>
     </div>
   );
 }
