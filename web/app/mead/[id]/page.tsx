@@ -8,7 +8,7 @@ import { Timeline } from "@/components/Timeline";
 import { SpriteVessel } from "@/components/SpriteVessel";
 import { events } from "@/lib/analytics";
 import { deleteMead, getMead, upsertMead } from "@/lib/storage";
-import { project, type Mead, type Observation, type PhaseName } from "@/lib/mead";
+import { fermentationRisks, project, YEASTS, type Mead, type Observation, type PhaseName } from "@/lib/mead";
 
 export default function MeadDetailPage() {
   const params = useParams<{ id: string }>();
@@ -123,16 +123,32 @@ export default function MeadDetailPage() {
           />
         </div>
         <div className="grid gap-4">
-          <div className="grid grid-cols-3 gap-3 text-sm">
-            <Stat label="Starting gravity" value={proj.startingGravity.toFixed(3)} />
-            <Stat label="Est. final gravity" value={proj.estFinalGravity.toFixed(3)} />
-            <Stat label="Est. ABV" value={`${proj.estABV.toFixed(1)}%`} />
+          <div className="grid gap-1">
+            <p className="eyebrow text-[var(--ink-soft)]">Recipe estimate</p>
+            <div className="grid grid-cols-3 gap-3 text-sm">
+              <Stat label="Starting gravity" value={proj.startingGravity.toFixed(3)} />
+              <Stat label="Est. final gravity" value={proj.estFinalGravity.toFixed(3)} />
+              <Stat label="Est. ABV" value={`${proj.estABV.toFixed(1)}%`} />
+            </div>
           </div>
+          {fermentationRisks(proj.startingGravity, YEASTS[mead.yeast]).map((r) => (
+            <p
+              key={r.kind}
+              className="text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-md px-3 py-2"
+            >
+              {r.message}
+            </p>
+          ))}
           <Timeline
             projection={proj}
             selectedPhase={previewPhase}
             onSelectPhase={setPreviewPhase}
           />
+          <p className="text-xs text-[var(--muted)]">
+            Timeline is an estimate — confirm completion with a stable gravity reading over several
+            days, not the calendar or airlock activity. Don&apos;t backsweeten or bottle a sweet mead
+            until fermentation is stable and (if needed) chemically stabilized.
+          </p>
           {previewPhase ? (
             <button
               type="button"

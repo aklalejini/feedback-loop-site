@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   blankMead,
   currentPhase,
+  fermentationRisks,
+  potentialAbvToDry,
   project,
   startingGravity,
   YEASTS,
@@ -96,5 +98,42 @@ describe("YEAST table", () => {
       expect(y.attenuationPct).toBeGreaterThan(0.5);
       expect(y.attenuationPct).toBeLessThanOrEqual(1.0);
     }
+  });
+});
+
+describe("fermentationRisks", () => {
+  it("flags yeast tolerance when potential ABV exceeds it", () => {
+    // SG 1.140 → ~18.4% potential, well over D-47's ~14%
+    const risks = fermentationRisks(1.140, YEASTS["D-47"]);
+    expect(risks.some((r) => r.kind === "tolerance")).toBe(true);
+  });
+
+  it("does not flag tolerance for a standard batch within range", () => {
+    // SG 1.085 → ~11.2% potential, under D-47's ~14%
+    const risks = fermentationRisks(1.085, YEASTS["D-47"]);
+    expect(risks.some((r) => r.kind === "tolerance")).toBe(false);
+  });
+
+  it("flags osmotic stress above 1.120 regardless of yeast", () => {
+    const risks = fermentationRisks(1.135, YEASTS["EC-1118"]);
+    expect(risks.some((r) => r.kind === "osmotic")).toBe(true);
+  });
+
+  it("does not flag osmotic stress at exactly 1.120", () => {
+    const risks = fermentationRisks(1.120, YEASTS["EC-1118"]);
+    expect(risks.some((r) => r.kind === "osmotic")).toBe(false);
+  });
+
+  it("produces no risks for an empty must", () => {
+    expect(fermentationRisks(1.000, YEASTS["D-47"]).length).toBe(0);
+  });
+});
+
+describe("potentialAbvToDry", () => {
+  it("maps SG to ABV via the standard 131.25 factor", () => {
+    expect(potentialAbvToDry(1.100)).toBeCloseTo(13.125, 3);
+  });
+  it("clamps to zero below 1.000", () => {
+    expect(potentialAbvToDry(0.995)).toBe(0);
   });
 });
