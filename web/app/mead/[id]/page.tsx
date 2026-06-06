@@ -62,6 +62,17 @@ export default function MeadDetailPage() {
     setMead(next);
   }
 
+  function toggleNutrient(index: number) {
+    if (!mead) return;
+    const current = mead.nutrientsDone ?? [];
+    const adding = !current.includes(index);
+    const nutrientsDone = adding ? [...current, index] : current.filter((i) => i !== index);
+    const next: Mead = { ...mead, nutrientsDone };
+    upsertMead(next);
+    setMead(next);
+    if (adding) events.nutrientAdded();
+  }
+
   function handleEdit(updated: Mead) {
     upsertMead(updated);
     setMead(updated);
@@ -172,7 +183,12 @@ export default function MeadDetailPage() {
       <section className="grid gap-3">
         <h2 className="text-2xl font-display">Nutrients</h2>
         <div className="pixel-card-sm p-4">
-          <NutrientSchedule mead={mead} />
+          <NutrientSchedule
+            mead={mead}
+            interactive
+            done={mead.nutrientsDone ?? []}
+            onToggle={toggleNutrient}
+          />
         </div>
       </section>
 
