@@ -37,7 +37,7 @@ const LID_DK = "#9c947f";
 const AIR_WATER = "#7fc6e0";
 const SHADOW = "rgba(46,35,54,0.16)";
 
-type ShapeKind = "jug" | "carboy" | "bucket" | "demijohn";
+type ShapeKind = "jug" | "bucket" | "demijohn";
 
 interface ShapeParams {
   shape: ShapeKind;
@@ -54,7 +54,6 @@ interface ShapeParams {
 }
 
 const PARAMS: Record<ShapeKind, ShapeParams> = {
-  carboy:   { shape: "carboy",   neckTop: 40, neckHW: 6, shoulderTop: 54, bodyTop: 72, bodyBottom: 144, maxHW: 30, baseRound: 10, lid: "cork" },
   jug:      { shape: "jug",      neckTop: 40, neckHW: 7, shoulderTop: 52, bodyTop: 70, bodyBottom: 144, maxHW: 34, baseRound: 10, lid: "cork", handle: true },
   demijohn: { shape: "demijohn", neckTop: 40, neckHW: 8, shoulderTop: 52, bodyTop: 66, bodyBottom: 144, maxHW: 37, baseRound: 10, lid: "cork" },
   bucket:   { shape: "bucket",   neckTop: 38, neckHW: 34, shoulderTop: 38, bodyTop: 46, bodyBottom: 144, maxHW: 34, baseRound: 0, lid: "lid", taperBottomHW: 31 },
