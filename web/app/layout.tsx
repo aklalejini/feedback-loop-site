@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Mulish } from "next/font/google";
-import { PlausibleScript } from "@/components/PlausibleScript";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const display = Fraunces({
@@ -43,7 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body>
-        <PlausibleScript />
+        <Analytics />
         <main className="max-w-5xl mx-auto px-5 py-9">
           <header className="mb-9">
             <div className="flex items-center justify-between gap-4">

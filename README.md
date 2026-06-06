@@ -57,7 +57,8 @@ pip install -e .
 playwright install chromium
 
 export ANTHROPIC_API_KEY=...
-# optional: export PLAUSIBLE_API_KEY=... PLAUSIBLE_SITE_ID=...
+# Analytics is Vercel Web Analytics (no API key); the manager runs
+# reviewer-only until a queryable analytics source is wired.
 
 python run_cycle.py --url http://localhost:3000
 # outputs to cycles/YYYY-MM-DD/
