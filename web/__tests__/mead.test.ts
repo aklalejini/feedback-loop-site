@@ -3,6 +3,7 @@ import {
   blankMead,
   currentPhase,
   fermentationRisks,
+  gravitySource,
   potentialAbvToDry,
   project,
   startingGravity,
@@ -126,6 +127,37 @@ describe("fermentationRisks", () => {
 
   it("produces no risks for an empty must", () => {
     expect(fermentationRisks(1.000, YEASTS["D-47"]).length).toBe(0);
+  });
+});
+
+describe("startingGravity (measured-OG override)", () => {
+  it("uses measuredOG verbatim when present", () => {
+    expect(startingGravity({ honeyKg: 1.4, waterL: 3.0, measuredOG: 1.072 })).toBe(1.072);
+  });
+  it("falls back to recipe estimate when measuredOG is undefined", () => {
+    const sg = startingGravity({ honeyKg: 1.4, waterL: 3.0 });
+    expect(sg).toBeGreaterThan(1.08);
+    expect(sg).toBeLessThan(1.16);
+  });
+  it("ignores measuredOG when it is 0 or negative (treats as unset)", () => {
+    expect(startingGravity({ honeyKg: 1.4, waterL: 3.0, measuredOG: 0 })).toBeGreaterThan(1.08);
+  });
+  it("propagates through project() so FG and ABV come off the measured value", () => {
+    const m: Mead = { ...blankMead("t"), honeyKg: 0, waterL: 0, measuredOG: 1.100, yeast: "D-47" };
+    const p = project(m, new Date(m.createdAt));
+    expect(p.startingGravity).toBe(1.100);
+    // FG = 1 + (0.1) * (1 - 0.8) = 1.020 → ABV ~ (1.100 - 1.020) * 131.25 = 10.5
+    expect(p.estABV).toBeCloseTo(10.5, 1);
+  });
+});
+
+describe("gravitySource", () => {
+  it("returns 'measured' when measuredOG is set and positive", () => {
+    expect(gravitySource({ measuredOG: 1.090 })).toBe("measured");
+  });
+  it("returns 'estimated' when measuredOG is absent or zero", () => {
+    expect(gravitySource({})).toBe("estimated");
+    expect(gravitySource({ measuredOG: 0 })).toBe("estimated");
   });
 });
 

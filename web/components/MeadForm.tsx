@@ -11,6 +11,7 @@ import {
   startingGravity,
   blankMead,
   fermentationRisks,
+  gravitySource,
 } from "@/lib/mead";
 import { SpriteVessel } from "@/components/SpriteVessel";
 
@@ -183,6 +184,41 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             </div>
           </Field>
 
+          {/* Measured OG (optional override) */}
+          <Field label="Measured OG (hydrometer, optional)" htmlFor="measuredOG">
+            <div className="flex gap-2 items-center">
+              <input
+                id="measuredOG"
+                type="number"
+                step="0.001"
+                min="1.000"
+                max="1.200"
+                className="in font-mono w-32"
+                value={draft.measuredOG ?? ""}
+                placeholder="e.g. 1.092"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setDraft((d) => ({
+                    ...d,
+                    measuredOG: v === "" ? undefined : Number(v),
+                  }));
+                }}
+              />
+              {draft.measuredOG != null ? (
+                <button
+                  type="button"
+                  className="text-xs underline text-[var(--muted)] hover:text-[var(--ink)]"
+                  onClick={() => setDraft((d) => ({ ...d, measuredOG: undefined }))}
+                >
+                  clear
+                </button>
+              ) : null}
+            </div>
+            <p className="text-xs text-[var(--muted)] mt-1">
+              A hydrometer reading of your must overrides the recipe estimate.
+            </p>
+          </Field>
+
           {/* Spices */}
           <Field label="Spices / additions (optional)">
             <div className="flex flex-wrap gap-2">
@@ -212,14 +248,21 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
 
       {/* stats */}
       <div className="grid gap-1 border-t border-[var(--line)] pt-4">
-        <p className="eyebrow text-[var(--ink-soft)]">Recipe estimate</p>
+        <p className="eyebrow text-[var(--ink-soft)]">
+          {gravitySource(draft) === "measured" ? "Measured" : "Recipe estimate"}
+        </p>
         <div className="grid grid-cols-3 gap-3 text-sm">
-          <Stat label="Starting gravity" value={isEmpty ? "—" : sg.toFixed(3)} />
+          <Stat
+            label={gravitySource(draft) === "measured" ? "Measured OG" : "Starting gravity"}
+            value={isEmpty ? "—" : sg.toFixed(3)}
+          />
           <Stat label="Est. final gravity" value={isEmpty ? "—" : estFG.toFixed(3)} />
           <Stat label="Est. ABV" value={isEmpty ? "—" : `${estABV.toFixed(1)}%`} />
         </div>
         <p className="text-xs text-[var(--muted)] mt-1">
-          Estimated from the recipe. A hydrometer reading of your actual must is more accurate.
+          {gravitySource(draft) === "measured"
+            ? "Using your hydrometer reading. FG and ABV are still estimates from yeast attenuation."
+            : "Estimated from the recipe. A hydrometer reading of your actual must is more accurate."}
         </p>
       </div>
 

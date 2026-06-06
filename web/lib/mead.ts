@@ -74,6 +74,10 @@ export interface Mead {
   fruitsKg?: number;
   createdAt: string;   // ISO date
   observations: Observation[];
+  // Optional hydrometer reading of the actual must. When present it overrides
+  // the recipe estimate as the source of truth for FG/ABV (docs/research:
+  // "Prefer Measured OG").
+  measuredOG?: number;
 }
 
 export interface Phase {
@@ -94,10 +98,15 @@ export interface Projection {
 const HONEY_GRAVITY_PER_KG_PER_L = 0.319;
 const HONEY_DENSITY_L_PER_KG = 0.7; // honey ≈ 1.42 kg/L → 1 kg ≈ 0.7 L
 
-export function startingGravity(input: Pick<Mead, "honeyKg" | "waterL">): number {
+export function startingGravity(input: Pick<Mead, "honeyKg" | "waterL"> & { measuredOG?: number }): number {
+  if (typeof input.measuredOG === "number" && input.measuredOG > 0) return input.measuredOG;
   const totalL = Math.max(0, input.waterL) + Math.max(0, input.honeyKg) * HONEY_DENSITY_L_PER_KG;
   if (totalL <= 0) return 1.0;
   return 1 + (input.honeyKg * HONEY_GRAVITY_PER_KG_PER_L) / totalL;
+}
+
+export function gravitySource(input: { measuredOG?: number }): "measured" | "estimated" {
+  return typeof input.measuredOG === "number" && input.measuredOG > 0 ? "measured" : "estimated";
 }
 
 export function project(mead: Mead, now: Date = new Date()): Projection {
