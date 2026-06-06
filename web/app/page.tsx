@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MeadForm } from "@/components/MeadForm";
+import { PixelVessel } from "@/components/PixelVessel";
 import { events } from "@/lib/analytics";
 import { loadMeads, upsertMead } from "@/lib/storage";
 import { HONEYS, project, VESSELS, type Mead } from "@/lib/mead";
@@ -38,12 +39,9 @@ export default function HomePage() {
 
       <section className="grid gap-3">
         <div className="flex justify-between items-baseline">
-          <h2 className="text-xl font-semibold">Your batches</h2>
+          <h2 className="text-xl font-bold uppercase tracking-wide">Your batches</h2>
           {!creating ? (
-            <button
-              onClick={() => setCreating(true)}
-              className="px-4 py-2 rounded bg-[var(--accent)] text-white font-medium hover:opacity-90"
-            >
+            <button onClick={() => setCreating(true)} className="btn rounded-none px-4 py-2">
               New batch
             </button>
           ) : null}
@@ -54,7 +52,7 @@ export default function HomePage() {
         ) : null}
 
         {meads.length === 0 && !creating ? (
-          <div className="border border-dashed border-[var(--line)] rounded-lg p-8 text-center text-[var(--muted)]">
+          <div className="pixel-card rounded-none p-8 text-center text-[var(--muted)]">
             No batches yet. Click <strong>New batch</strong> to design your first one.
           </div>
         ) : null}
@@ -67,21 +65,28 @@ export default function HomePage() {
                 (Date.now() - new Date(m.createdAt).getTime()) / 86400000,
               );
               return (
-                <li
-                  key={m.id}
-                  className="border border-[var(--line)] rounded-lg p-4 bg-white/40 hover:bg-white transition-colors"
-                >
-                  <Link href={`/mead/${m.id}`} className="grid gap-2 no-underline text-[var(--ink)]">
-                    <div className="flex items-baseline justify-between">
-                      <h3 className="font-display font-semibold text-lg">{m.name}</h3>
-                      <span className="text-xs text-[var(--muted)]">{ageDays}d in</span>
-                    </div>
-                    <p className="text-sm text-[var(--muted)]">
-                      {HONEYS[m.honeyType].label} · {VESSELS[m.vessel].label} · {m.yeast}
-                    </p>
-                    <div className="flex gap-4 text-sm">
-                      <span>Phase: <strong>{proj.currentPhase}</strong></span>
-                      <span>Est. ABV: <strong>{proj.estABV.toFixed(1)}%</strong></span>
+                <li key={m.id} className="pixel-card rounded-none p-4 hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform">
+                  <Link href={`/mead/${m.id}`} className="grid grid-cols-[56px,1fr] gap-3 no-underline text-[var(--ink)]">
+                    <PixelVessel
+                      vessel={m.vessel}
+                      honeyType={m.honeyType}
+                      liters={m.waterL + m.honeyKg * 0.7}
+                      phase={proj.currentPhase}
+                      size={56}
+                      animated={false}
+                    />
+                    <div className="grid gap-1 content-start">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <h3 className="font-bold text-lg leading-tight">{m.name}</h3>
+                        <span className="text-xs text-[var(--muted)] shrink-0">{ageDays}d in</span>
+                      </div>
+                      <p className="text-xs text-[var(--muted)]">
+                        {HONEYS[m.honeyType].label} · {VESSELS[m.vessel].label} · {m.yeast}
+                      </p>
+                      <div className="flex gap-4 text-sm">
+                        <span>Phase: <strong>{proj.currentPhase}</strong></span>
+                        <span>ABV: <strong>{proj.estABV.toFixed(1)}%</strong></span>
+                      </div>
                     </div>
                   </Link>
                 </li>

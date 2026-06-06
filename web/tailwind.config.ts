@@ -13,9 +13,14 @@ const config: Config = {
           light: "#fdd35f",
           dark: "#5a3a1a",
         },
+        ink: "#34243f",
       },
       fontFamily: {
-        display: ["ui-serif", "Georgia", "serif"],
+        display: ["ui-sans-serif", "system-ui", "sans-serif"],
+      },
+      boxShadow: {
+        pixel: "4px 4px 0 0 #34243f",
+        "pixel-sm": "2px 2px 0 0 #34243f",
       },
     },
   },

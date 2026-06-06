@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { MeadForm } from "@/components/MeadForm";
 import { ObservationLog } from "@/components/ObservationLog";
 import { Timeline } from "@/components/Timeline";
-import { VesselSVG } from "@/components/VesselSVG";
+import { PixelVessel } from "@/components/PixelVessel";
 import { events } from "@/lib/analytics";
 import { deleteMead, getMead, upsertMead } from "@/lib/storage";
 import { project, type Mead, type Observation, type PhaseName } from "@/lib/mead";
@@ -117,7 +117,15 @@ export default function MeadDetailPage() {
       </header>
 
       <section className="grid sm:grid-cols-[auto,1fr] gap-6 items-start">
-        <VesselSVG mead={mead} phase={previewPhase ?? proj.currentPhase} />
+        <div className="pixel-card-sm rounded-none p-3 mx-auto sm:mx-0 bg-[var(--bg)]">
+          <PixelVessel
+            vessel={mead.vessel}
+            honeyType={mead.honeyType}
+            liters={mead.waterL + mead.honeyKg * 0.7}
+            phase={previewPhase ?? proj.currentPhase}
+            size={200}
+          />
+        </div>
         <div className="grid gap-4">
           <div className="grid grid-cols-3 gap-3 text-sm">
             <Stat label="Starting gravity" value={proj.startingGravity.toFixed(3)} />

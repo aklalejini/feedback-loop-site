@@ -3,17 +3,26 @@
 @tailwind utilities;
 
 :root {
-  --bg: #fbf6ea;
-  --ink: #1f1a12;
+  --bg: #f3ead6;
+  --ink: #34243f;
   --muted: #6b6253;
-  --line: #e8dfca;
+  --line: #d8c9a8;
   --accent: #b56a1f;
+  --card: #fffdf6;
 }
 
 html, body {
   background: var(--bg);
   color: var(--ink);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* subtle pixel-grid ambient texture behind everything */
+body {
+  background-image:
+    linear-gradient(rgba(52, 36, 63, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(52, 36, 63, 0.025) 1px, transparent 1px);
+  background-size: 8px 8px;
 }
 
 a { color: var(--accent); }
@@ -23,28 +32,96 @@ button, input, select, textarea {
   font: inherit;
 }
 
-/* Rising fermentation bubble.
-   Travels upward by --rise pixels (negative when up in SVG coords),
-   fading in then out. */
-@keyframes bubble-rise {
-  0%   { transform: translateY(0)          scale(0.6); opacity: 0; }
-  15%  { opacity: 0.9; }
-  85%  { opacity: 0.6; }
-  100% { transform: translateY(var(--rise, -100px)) scale(1); opacity: 0; }
+.pixelated { image-rendering: pixelated; }
+
+/* Chunky retro panel/card */
+.pixel-card {
+  background: var(--card);
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 0 var(--ink);
+}
+.pixel-card-sm {
+  background: var(--card);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 0 var(--ink);
 }
 
-/* Single bubble trickling inside the airlock's water reservoir. */
-@keyframes airlock-bubble {
-  0%   { transform: translateY(8px) scale(0.6); opacity: 0; }
-  15%  { opacity: 1; }
-  50%  { transform: translateY(-2px) scale(1); opacity: 1; }
-  100% { transform: translateY(-10px) scale(0.7); opacity: 0; }
+/* Selectable option card */
+.opt {
+  background: var(--card);
+  border: 2px solid var(--line);
+  transition: transform 0.05s ease, box-shadow 0.05s ease, border-color 0.05s ease;
+  cursor: pointer;
+}
+.opt:hover { border-color: var(--ink); }
+.opt[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 3px 3px 0 0 var(--accent);
+  transform: translate(-1px, -1px);
+}
+
+/* Chunky button */
+.btn {
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 0 var(--ink);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  transition: transform 0.05s ease, box-shadow 0.05s ease;
+}
+.btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 0 var(--ink); }
+.btn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 0 var(--ink); }
+.btn-ghost {
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 0 var(--ink);
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 700;
+}
+.btn-ghost:hover { transform: translate(-1px, -1px); }
+
+/* Range slider — blocky pixel styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 10px;
+  background: var(--card);
+  border: 2px solid var(--ink);
+}
+input[type="range"]::-moz-range-track {
+  height: 10px;
+  background: var(--card);
+  border: 2px solid var(--ink);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 22px;
+  width: 16px;
+  margin-top: -8px;
+  background: var(--accent);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 0 var(--ink);
+}
+input[type="range"]::-moz-range-thumb {
+  height: 22px;
+  width: 16px;
+  background: var(--accent);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  box-shadow: 2px 2px 0 0 var(--ink);
+}
+input[type="range"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bubble-rise,
-  .airlock-bubble {
-    animation: none !important;
-    opacity: 0 !important;
-  }
+  .opt, .btn, .btn-ghost { transition: none; }
 }
