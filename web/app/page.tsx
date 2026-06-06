@@ -30,19 +30,19 @@ export default function HomePage() {
   return (
     <div className="grid gap-8">
       <section className="grid gap-3">
-        <h1 className="text-4xl sm:text-5xl font-display leading-tight">Plan and track your mead.</h1>
-        <p className="text-[var(--muted)] max-w-2xl">
-          Design a batch, get a projected fermentation timeline, log observations as it
-          progresses. Nothing leaves your browser — your batches live in local storage on
-          this device.
+        <p className="eyebrow">a brewer&apos;s workbench</p>
+        <h1 className="text-4xl sm:text-5xl font-display font-semibold leading-[1.05]">Plan and track your mead.</h1>
+        <p className="text-[var(--ink-soft)] max-w-2xl leading-relaxed">
+          Design a batch, watch a projected fermentation timeline unfold, and log observations as it
+          progresses. Nothing leaves your browser — your batches live in local storage on this device.
         </p>
       </section>
 
-      <section className="grid gap-3">
-        <div className="flex justify-between items-baseline">
-          <h2 className="text-2xl font-display">Your batches</h2>
+      <section className="grid gap-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-display font-semibold">Your batches</h2>
           {!creating ? (
-            <button onClick={() => setCreating(true)} className="btn rounded-none px-4 py-2">
+            <button onClick={() => setCreating(true)} className="btn px-4 py-2">
               New batch
             </button>
           ) : null}
@@ -53,8 +53,8 @@ export default function HomePage() {
         ) : null}
 
         {meads.length === 0 && !creating ? (
-          <div className="pixel-card rounded-none p-8 text-center text-[var(--muted)]">
-            No batches yet. Click <strong>New batch</strong> to design your first one.
+          <div className="pixel-card p-10 text-center text-[var(--muted)]">
+            No batches yet. Click <strong className="text-[var(--ink)]">New batch</strong> to design your first one.
           </div>
         ) : null}
 
@@ -68,7 +68,7 @@ export default function HomePage() {
               return (
                 <li
                   key={m.id}
-                  className="pixel-card rounded-none p-4 hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
+                  className="pixel-card p-4 transition-transform hover:-translate-y-0.5"
                 >
                   <Link
                     href={`/mead/${m.id}`}

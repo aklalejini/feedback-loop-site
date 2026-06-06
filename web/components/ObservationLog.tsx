@@ -33,7 +33,7 @@ export function ObservationLog({ observations, onAdd, onDelete }: Props) {
         }}
       >
         <div className="grid gap-1">
-          <label htmlFor="gravity" className="text-xs uppercase tracking-wide text-[var(--muted)]">
+          <label htmlFor="gravity" className="eyebrow text-[var(--ink-soft)]">
             Gravity
           </label>
           <input
@@ -45,11 +45,11 @@ export function ObservationLog({ observations, onAdd, onDelete }: Props) {
             placeholder="e.g. 1.024"
             value={gravity}
             onChange={(e) => setGravity(e.target.value)}
-            className="border border-[var(--line)] rounded px-3 py-2 bg-white"
+            className="in tabular-nums"
           />
         </div>
         <div className="grid gap-1">
-          <label htmlFor="note" className="text-xs uppercase tracking-wide text-[var(--muted)]">
+          <label htmlFor="note" className="eyebrow text-[var(--ink-soft)]">
             Note
           </label>
           <input
@@ -57,13 +57,10 @@ export function ObservationLog({ observations, onAdd, onDelete }: Props) {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="airlock activity, taste, racked, etc."
-            className="border border-[var(--line)] rounded px-3 py-2 bg-white"
+            className="in"
           />
         </div>
-        <button
-          type="submit"
-          className="px-4 py-2 rounded bg-[var(--accent)] text-white font-medium hover:opacity-90 self-end"
-        >
+        <button type="submit" className="btn px-5 py-2 self-end">
           Log
         </button>
       </form>
@@ -77,7 +74,7 @@ export function ObservationLog({ observations, onAdd, onDelete }: Props) {
             .map((o) => (
               <li
                 key={o.id}
-                className="flex justify-between items-start border border-[var(--line)] rounded px-3 py-2 bg-white"
+                className="flex justify-between items-start pixel-card-sm px-3 py-2"
               >
                 <div className="grid gap-0.5">
                   <span className="text-xs text-[var(--muted)]">

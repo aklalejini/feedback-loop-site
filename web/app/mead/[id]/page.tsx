@@ -99,17 +99,13 @@ export default function MeadDetailPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="px-3 py-2 rounded border border-[var(--line)] bg-white text-sm"
-          >
+          <button type="button" onClick={() => setEditing(true)} className="btn-ghost px-3 py-2 text-sm">
             Edit recipe
           </button>
           <button
             type="button"
             onClick={handleDelete}
-            className="px-3 py-2 rounded border border-[var(--line)] bg-white text-sm text-red-700 hover:bg-red-50"
+            className="btn-ghost px-3 py-2 text-sm text-red-700"
           >
             Delete
           </button>
@@ -117,7 +113,7 @@ export default function MeadDetailPage() {
       </header>
 
       <section className="grid sm:grid-cols-[auto,1fr] gap-6 items-start">
-        <div className="pixel-card-sm rounded-none p-3 mx-auto sm:mx-0 bg-[var(--bg)]">
+        <div className="pixel-card-sm p-3 mx-auto sm:mx-0 bg-[var(--bg)]">
           <SpriteVessel
             vessel={mead.vessel}
             honeyType={mead.honeyType}
@@ -166,7 +162,7 @@ export default function MeadDetailPage() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid gap-0.5">
-      <span className="text-xs uppercase tracking-wide text-[var(--muted)]">{label}</span>
+      <span className="eyebrow">{label}</span>
       <span className="font-mono text-base">{value}</span>
     </div>
   );
