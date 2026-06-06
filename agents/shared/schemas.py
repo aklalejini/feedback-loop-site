@@ -80,8 +80,8 @@ CHANGELIST_SCHEMA = {
                     },
                     "passes_threshold_rule": {
                         "type": "string",
-                        "enum": ["a", "b", "c"],
-                        "description": "(a) >=5% lift, (b) UX bug fix, (c) a11y fix.",
+                        "enum": ["a", "b", "c", "d"],
+                        "description": "(a) >=5% lift, (b) UX bug fix, (c) a11y fix, (d) factual/accuracy or safety fix.",
                     },
                     "effort": {"type": "string", "enum": ["low", "medium", "high"]},
                     "files_likely_touched": {

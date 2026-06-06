@@ -63,6 +63,18 @@ def test_keeps_bug_fix_with_no_lift_estimate():
     assert len(out["approved"]) == 1
 
 
+def test_keeps_accuracy_safety_fix_rule_d():
+    cl = {
+        "summary": "x",
+        "analytics_used": False,
+        "approved": [_approved("safety_fix", "d", None)],
+        "rejected": [],
+    }
+    out = enforce_limits(cl, GOAL)
+    assert len(out["approved"]) == 1
+    assert out["approved"][0]["finding_id"] == "safety_fix"
+
+
 def test_caps_at_max_changes():
     cl = {
         "summary": "x",

@@ -92,15 +92,15 @@ def enforce_limits(changelist: dict[str, Any], goal: dict[str, Any]) -> dict[str
         rule = item.get("passes_threshold_rule")
         lift = item.get("expected_lift_pct")
         clears_a = rule == "a" and isinstance(lift, (int, float)) and lift >= threshold_lift * 100
-        clears_bc = rule in ("b", "c")
-        if clears_a or clears_bc:
+        clears_bcd = rule in ("b", "c", "d")
+        if clears_a or clears_bcd:
             kept.append(item)
         else:
             rejected.append({
                 "finding_id": item.get("finding_id", "?"),
                 "reason": (
                     f"Post-filter: rule={rule} expected_lift_pct={lift} did not clear "
-                    f">={threshold_lift*100:.0f}% bar and was not a (b)/(c) fix."
+                    f">={threshold_lift*100:.0f}% bar and was not a (b)/(c)/(d) fix."
                 ),
             })
 

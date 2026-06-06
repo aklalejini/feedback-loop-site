@@ -1,0 +1,13 @@
+{
+  "cycle_date": "2026-06-06",
+  "url": "https://feedback-loop-site.vercel.app",
+  "routes": ["/", "/mead/[id]"],
+  "mode": "manual (Claude Code session acted as the reviewers + manager; no API key / $0)",
+  "goal_version": 2,
+  "reviewers": ["ux_reviewer", "domain_reviewer"],
+  "analytics_used": false,
+  "screenshots": ["home_empty", "planner_form", "home_with_batch", "batch_detail", "mobile_form"],
+  "approved_count": 3,
+  "rejected_count": 5,
+  "notes": "Screenshots captured from the live Vercel deployment. Findings + changelist written by hand following the same schemas the automated pipeline uses, so the format matches when this is later cron-automated."
+}

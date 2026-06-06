@@ -1,0 +1,59 @@
+{
+  "summary": "First real cycle against the live site, graded on goal.yaml v2. Two reviewers ran (UX + domain). The strongest signals are trust/accuracy/safety gaps in how projections are presented (the v2 mission is an HONEST decision layer), plus one high-leverage growth fix for the first-time empty state. Bigger domain bets (TOSNA nutrient schedule, crawlable knowledge base, timeline-as-range) are real and recommended but exceed the per-change line cap or need their own cycle, so they're deferred with reasons. Analytics signal was reviewer-only (no traffic / not yet wired).",
+  "analytics_used": false,
+  "approved": [
+    {
+      "rank": 1,
+      "finding_id": "no_confidence_labels+no_yeast_tolerance_warning+no_completion_safety_warning",
+      "change_description": "Honesty & safety pass on the projection block and timeline: (1) label the stats as a 'Recipe estimate' (becomes 'Measured' once a measured OG exists); (2) when potential-ABV-to-dry exceeds the selected yeast's tolerance, show a residual-sweetness/stall warning, and an osmotic-stress note when OG > 1.120; (3) add a persistent 'confirm completion with a stable gravity reading, not the calendar or airlock' note near the timeline, plus a backsweetening/bottling caution. All wording traceable to docs/research.",
+      "rationale": "Directly serves v2's honesty + safety constraints and the 'trustworthy decision layer' mission. These are correctness/safety fixes, not cosmetic, and cheap to ship together as one cohesive trust pass. Bundled because they touch the same projection/timeline surface.",
+      "expected_lift_pct": null,
+      "passes_threshold_rule": "d",
+      "effort": "low",
+      "files_likely_touched": ["web/lib/mead.ts", "web/components/MeadForm.tsx", "web/app/mead/[id]/page.tsx", "web/components/Timeline.tsx"]
+    },
+    {
+      "rank": 2,
+      "finding_id": "no_measured_og_override",
+      "change_description": "Add an optional 'Measured OG (hydrometer)' input to the planner. When provided, it overrides the recipe gravity estimate as the source of truth for FG/ABV projection, and flips the confidence label to 'Measured'. When absent, behavior is unchanged.",
+      "rationale": "docs/research makes measured OG first-class ('measured > estimated'). This is the upgrade path from assumption-heavy to high-confidence projections and is core to an honest decision layer. Accuracy fix (rule d); also plausibly lifts engaged sessions by giving real brewers a reason to use the tool with their hydrometer.",
+      "expected_lift_pct": null,
+      "passes_threshold_rule": "d",
+      "effort": "medium",
+      "files_likely_touched": ["web/lib/mead.ts", "web/components/MeadForm.tsx", "web/__tests__/mead.test.ts"]
+    },
+    {
+      "rank": 3,
+      "finding_id": "empty_state_no_example",
+      "change_description": "Add a 'Try a sample batch' action to the empty 'Your batches' state that loads a clearly-labeled, dismissible demo batch so first-time visitors immediately see the vessel + timeline + stats before building their own.",
+      "rationale": "First-action friction is the biggest drag on engaged_sessions for a first-time-heavy audience (Plant by ZIP: show the shape of the tool before commitment). Small, self-contained.",
+      "expected_lift_pct": 8,
+      "passes_threshold_rule": "a",
+      "effort": "low",
+      "files_likely_touched": ["web/app/page.tsx", "web/lib/mead.ts"]
+    }
+  ],
+  "rejected": [
+    {
+      "finding_id": "no_nutrient_schedule",
+      "reason": "Highest-value domain feature, but a good TOSNA/YAN calculator (formula + 4-stage schedule + UI + disclaimer) realistically exceeds the 200-line per-change cap. Deferred to its own cycle as the top recommended next build."
+    },
+    {
+      "finding_id": "no_knowledge_base_pages",
+      "reason": "Strategically important (discovery) and now in scope, but it's a multi-cycle build (structured data + entity pages + routing). Not a single <=200-line change. Recommend scheduling after the trust + nutrient work."
+    },
+    {
+      "finding_id": "timeline_overprecise_dates",
+      "reason": "Valid trust issue; the rank-1 'confirm with stable gravity' note mitigates the worst of it this cycle. Full range-based timeline is a medium build — fold into a later timeline-accuracy pass."
+    },
+    {
+      "finding_id": "no_term_tooltips",
+      "reason": "Good for beginners but lower impact than the trust/measured-OG/empty-state items; would push the cycle past the 3-change cap. Hold for next cycle."
+    },
+    {
+      "finding_id": "detail_no_next_action",
+      "reason": "Promising 'what do I do today' lever, but overlaps the nutrient-schedule work (next-step guidance is strongest once nutrient timing exists). Defer and pair with TOSNA."
+    }
+  ],
+  "notes_to_human": "Analytics was reviewer-only this cycle (no traffic yet; Vercel Analytics being wired separately). Two of the three approved items ship under rule (d) accuracy/safety with no lift estimate by design — they make the tool honest, which is the v2 mission. Recommend the very next cycle be the TOSNA nutrient schedule (the strongest deferred item). Each approved item ships on its own branch (cycle/2026-06-06/change-N) for independent review + rollback."
+}

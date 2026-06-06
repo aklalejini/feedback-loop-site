@@ -1,0 +1,44 @@
+{
+  "reviewer": "ux_reviewer",
+  "model": "manual (Claude Code session acting as reviewer)",
+  "url": "https://feedback-loop-site.vercel.app",
+  "routes": ["home_empty", "planner_form", "home_with_batch", "batch_detail", "mobile_form"],
+  "findings": [
+    {
+      "id": "empty_state_no_example",
+      "title": "First-time empty state shows no example of what the tool does",
+      "description": "A new visitor lands on an empty 'Your batches' panel with only a 'New batch' button. They must commit to filling the whole planner before seeing any value or understanding the timeline/vessel payoff. Leading with a visible example reduces first-action friction and is the strongest lever on engaged_sessions for a first-time-heavy audience.",
+      "evidence": "home_empty.png: the panel reads 'No batches yet. Click New batch to design your first one.' with no demo, thumbnail, or preview of an in-progress batch.",
+      "estimated_impact": "high",
+      "estimated_effort": "low",
+      "metric_affected": "primary",
+      "category": "ux",
+      "anti_goal_risk": [],
+      "suggested_change": "Add a 'Try a sample batch' action on the empty state that loads a pre-filled demo batch (clearly labeled as a sample, dismissible) so visitors immediately see the vessel + timeline + stats before building their own."
+    },
+    {
+      "id": "no_term_tooltips",
+      "title": "Technical terms have no inline explanation for beginners",
+      "description": "Stats read 'Starting gravity 1.140 / Est. final gravity 1.028 / Est. ABV 14.7%' with no explanation. v2's secondary audience is beginners; the strategy doc calls for tooltips on technical terms. Without them, beginners can't interpret the core output.",
+      "evidence": "planner_form.png and batch_detail.png: 'Starting gravity', 'Est. final gravity' shown as bare numbers with no affordance to learn what they mean.",
+      "estimated_impact": "medium",
+      "estimated_effort": "low",
+      "metric_affected": "secondary",
+      "category": "content",
+      "anti_goal_risk": [],
+      "suggested_change": "Add small info tooltips (keyboard-accessible) on gravity/ABV/phase terms with one-line plain-language explanations."
+    },
+    {
+      "id": "detail_no_next_action",
+      "title": "Detail view doesn't tell the maker what to do today",
+      "description": "The batch detail shows a timeline and an observations log, but nothing tells the maker the next concrete action ('today: log a gravity reading', 'day 2: nutrient addition'). The decision-layer mission is 'what do I do today?'. Right now the page is passive.",
+      "evidence": "batch_detail.png: timeline + empty observations with the prompt 'No observations yet…' but no next-step guidance tied to where the batch is in its timeline.",
+      "estimated_impact": "medium",
+      "estimated_effort": "medium",
+      "metric_affected": "secondary",
+      "category": "ux",
+      "anti_goal_risk": [],
+      "suggested_change": "Add a small 'next step' line on the detail page derived from the current phase (e.g. lag → 'expect activity within 24-48h; log your first gravity reading')."
+    }
+  ]
+}
