@@ -1,17 +1,17 @@
-// Thin Plausible wrapper. No-op when NEXT_PUBLIC_PLAUSIBLE_DOMAIN is unset.
+// Thin wrapper over Vercel Web Analytics custom events.
+//
+// Vercel's track() is a no-op in development and on non-Vercel hosts, and only
+// reports once the <Analytics /> component (in app/layout.tsx) is mounted, so
+// no env var or gating is needed here. We keep the typeof-window guard so the
+// helpers are safe to reference from any module without crashing during SSR.
 
-type Props = Record<string, string | number | boolean>;
+import { track as vercelTrack } from "@vercel/analytics";
 
-declare global {
-  interface Window {
-    plausible?: (event: string, opts?: { props?: Props }) => void;
-  }
-}
+type Props = Record<string, string | number | boolean | null>;
 
 export function track(event: string, props?: Props): void {
   if (typeof window === "undefined") return;
-  if (!process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN) return;
-  window.plausible?.(event, props ? { props } : undefined);
+  vercelTrack(event, props);
 }
 
 export const events = {

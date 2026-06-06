@@ -19,7 +19,7 @@ tests/          pytest — pure-logic tests for ranking and threshold
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 playwright install chromium
-cp .env.example .env  # then fill in ANTHROPIC_API_KEY (+ optional Plausible)
+cp .env.example .env  # then fill in ANTHROPIC_API_KEY
 ```
 
 ## Run one cycle
@@ -42,7 +42,7 @@ cycles/2026-06-06/
   screenshots/home.png
   screenshots/detail.png
   findings/ux.json
-  analytics.json          # only if Plausible is configured
+  analytics.json          # only when a queryable analytics source is wired
   changelist.json         # what the manager wants to ship
   manifest.json           # what was run, what models, run duration
 ```

@@ -10,10 +10,12 @@ How one cycle runs end-to-end, and the rules around it.
 2. **Review.** The UX reviewer (`agents/reviewers/ux_reviewer.py`) sends the
    screenshots + the goal summary to `claude-sonnet-4-6`, forcing structured
    output via a `submit_findings` tool. Output → `cycles/YYYY-MM-DD/findings/ux.json`.
-3. **Analytics (optional).** When `PLAUSIBLE_API_KEY` + `PLAUSIBLE_SITE_ID` are
-   set, the manager fetches a 7-day aggregate + event breakdown. Output →
-   `cycles/YYYY-MM-DD/analytics.json`. Without these env vars, the cycle still
-   runs and the manager notes that signal was reviewer-only.
+3. **Analytics.** The site uses Vercel Web Analytics, which has no read/stats
+   API on the hobby tier, so `fetch_snapshot()` returns `None` and the manager
+   runs reviewer-only, noting the gap. Custom events (`batch_created`, …) are
+   still emitted client-side and visible in the Vercel dashboard for manual
+   review. Wire a queryable source in `agents/shared/analytics.py` to restore
+   `cycles/YYYY-MM-DD/analytics.json`.
 4. **Manage.** The manager (`agents/manager/manager.py`) sends goal + findings +
    analytics to `claude-opus-4-8`, which ranks and filters into a changelist.
    The result then passes through a deterministic `enforce_limits` post-filter
