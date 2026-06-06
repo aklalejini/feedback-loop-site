@@ -20,21 +20,22 @@ interface Props {
 
 // Logical pixel canvas. Everything is drawn on this grid then upscaled
 // nearest-neighbour, which is what gives the chunky pixel-art look.
-const PW = 64;
-const PH = 104;
-const CX = 32;
+const PW = 96;
+const PH = 150;
+const CX = 48;
 
-// Palette
-const OUTLINE = "#34243f";
-const GLASS = "#e6efe9";
-const GLASS_SHADE = "#c9d8d1";
+// Palette (non-honey)
+const OUTLINE = "#2e2336";
+const GLASS = "#dde9e4";
+const GLASS_SHADE = "#bfd0c8";
 const SHINE = "#ffffff";
 const CORK = "#b07b43";
+const CORK_HI = "#c89058";
 const CORK_DK = "#7c5128";
 const LID = "#cdc6b6";
 const LID_DK = "#9c947f";
-const AIR_WATER = "#86c9da";
-const SHADOW = "rgba(40,28,50,0.18)";
+const AIR_WATER = "#7fc6e0";
+const SHADOW = "rgba(46,35,54,0.16)";
 
 type ShapeKind = "jug" | "carboy" | "bucket" | "demijohn";
 
@@ -53,19 +54,19 @@ interface ShapeParams {
 }
 
 const PARAMS: Record<ShapeKind, ShapeParams> = {
-  carboy:   { shape: "carboy",   neckTop: 26, neckHW: 4, shoulderTop: 36, bodyTop: 48, bodyBottom: 98, maxHW: 20, baseRound: 7, lid: "cork" },
-  jug:      { shape: "jug",      neckTop: 26, neckHW: 5, shoulderTop: 34, bodyTop: 46, bodyBottom: 98, maxHW: 23, baseRound: 7, lid: "cork", handle: true },
-  demijohn: { shape: "demijohn", neckTop: 26, neckHW: 6, shoulderTop: 34, bodyTop: 44, bodyBottom: 98, maxHW: 25, baseRound: 7, lid: "cork" },
-  bucket:   { shape: "bucket",   neckTop: 24, neckHW: 23, shoulderTop: 24, bodyTop: 30, bodyBottom: 98, maxHW: 23, baseRound: 0, lid: "lid", taperBottomHW: 21 },
+  carboy:   { shape: "carboy",   neckTop: 40, neckHW: 6, shoulderTop: 54, bodyTop: 72, bodyBottom: 144, maxHW: 30, baseRound: 10, lid: "cork" },
+  jug:      { shape: "jug",      neckTop: 40, neckHW: 7, shoulderTop: 52, bodyTop: 70, bodyBottom: 144, maxHW: 34, baseRound: 10, lid: "cork", handle: true },
+  demijohn: { shape: "demijohn", neckTop: 40, neckHW: 8, shoulderTop: 52, bodyTop: 66, bodyBottom: 144, maxHW: 37, baseRound: 10, lid: "cork" },
+  bucket:   { shape: "bucket",   neckTop: 38, neckHW: 34, shoulderTop: 38, bodyTop: 46, bodyBottom: 144, maxHW: 34, baseRound: 0, lid: "lid", taperBottomHW: 31 },
 };
 
-interface PhaseViz { bubbles: number; speed: number; airlock: boolean; cloud: number }
+interface PhaseViz { bubbles: number; speed: number; airlock: boolean; foam: number; sediment: number }
 const PHASE_VIZ: Record<PhaseName, PhaseViz> = {
-  lag:          { bubbles: 2,  speed: 4.5, airlock: false, cloud: 0.45 },
-  primary:      { bubbles: 11, speed: 1.8, airlock: true,  cloud: 0.6 },
-  secondary:    { bubbles: 4,  speed: 3.2, airlock: true,  cloud: 0.25 },
-  conditioning: { bubbles: 1,  speed: 6,   airlock: false, cloud: 0.06 },
-  done:         { bubbles: 0,  speed: 0,   airlock: false, cloud: 0 },
+  lag:          { bubbles: 4,  speed: 5,   airlock: false, foam: 2, sediment: 2 },
+  primary:      { bubbles: 26, speed: 1.6, airlock: true,  foam: 7, sediment: 4 },
+  secondary:    { bubbles: 9,  speed: 3,   airlock: true,  foam: 3, sediment: 7 },
+  conditioning: { bubbles: 2,  speed: 6,   airlock: false, foam: 1, sediment: 10 },
+  done:         { bubbles: 0,  speed: 0,   airlock: false, foam: 0, sediment: 12 },
 };
 
 type Cell = [number, number, string];
@@ -74,8 +75,8 @@ interface Bubble { x: number; speed: number; offset: number; big: boolean }
 interface Built {
   cells: Cell[];
   bubbles: Bubble[];
-  surfaceY: number;
-  bottomY: number;
+  bubbleTop: number;     // highest y a bubble may reach (just below foam)
+  bubbleBottom: number;  // lowest y (just above sediment)
   hasLiquid: boolean;
   airlock: { active: boolean; x: number; yLo: number; yHi: number } | null;
   ariaLabel: string;
@@ -84,13 +85,26 @@ interface Built {
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
+function toRGB(hex: string): [number, number, number] {
+  const n = parseInt(hex.replace("#", ""), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function fromRGB(r: number, g: number, b: number): string {
+  return `#${[r, g, b].map((v) => clamp(Math.round(v), 0, 255).toString(16).padStart(2, "0")).join("")}`;
+}
 function shade(hex: string, amt: number): string {
-  const m = hex.replace("#", "");
-  const n = parseInt(m, 16);
-  const r = clamp(((n >> 16) & 255) + amt, 0, 255);
-  const g = clamp(((n >> 8) & 255) + amt, 0, 255);
-  const b = clamp((n & 255) + amt, 0, 255);
-  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+  const [r, g, b] = toRGB(hex);
+  return fromRGB(r + amt, g + amt, b + amt);
+}
+function blend(a: string, b: string, t: number): string {
+  const [r1, g1, b1] = toRGB(a);
+  const [r2, g2, b2] = toRGB(b);
+  return fromRGB(lerp(r1, r2, t), lerp(g1, g2, t), lerp(b1, b2, t));
+}
+function hash(x: number, y: number): number {
+  let h = (Math.imul(x, 73856093) ^ Math.imul(y, 19349663)) >>> 0;
+  h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15;
+  return h >>> 0;
 }
 
 function halfWidth(p: ShapeParams, y: number): number | null {
@@ -101,13 +115,18 @@ function halfWidth(p: ShapeParams, y: number): number | null {
   }
   if (y < p.neckTop || y > p.bodyBottom) return null;
   if (y < p.shoulderTop) return p.neckHW;
-  if (y < p.bodyTop) return lerp(p.neckHW, p.maxHW, (y - p.shoulderTop) / (p.bodyTop - p.shoulderTop));
+  if (y < p.bodyTop) {
+    // eased shoulder curve (smoothstep) for a rounded glass shoulder
+    const u = (y - p.shoulderTop) / (p.bodyTop - p.shoulderTop);
+    const s = u * u * (3 - 2 * u);
+    return lerp(p.neckHW, p.maxHW, s);
+  }
   const baseStart = p.bodyBottom - p.baseRound;
   if (y < baseStart) {
     const m = (y - p.bodyTop) / (baseStart - p.bodyTop);
-    return p.maxHW + Math.sin(m * Math.PI) * 1.4; // gentle barrel bulge
+    return p.maxHW + Math.sin(m * Math.PI) * 1.6; // gentle barrel bulge
   }
-  return lerp(p.maxHW, p.maxHW * 0.6, (y - baseStart) / p.baseRound);
+  return lerp(p.maxHW, p.maxHW * 0.55, (y - baseStart) / p.baseRound);
 }
 
 function build(vessel: VesselKind, honeyType: HoneyType, liters: number, phase: PhaseName, seed: number): Built {
@@ -120,18 +139,51 @@ function build(vessel: VesselKind, honeyType: HoneyType, liters: number, phase: 
   const hasLiquid = fill > 0;
   const surfaceY = Math.round(p.bodyBottom - fill * (p.bodyBottom - p.bodyTop));
   const bottomY = p.bodyBottom - 2;
+  const liquidH = Math.max(1, bottomY - surfaceY);
 
+  const foamThk = Math.min(viz.foam, Math.floor(liquidH * 0.4));
+  const sedThk = Math.min(viz.sediment, Math.floor(liquidH * 0.5));
+  const foamBottom = surfaceY + foamThk;
+  const sedTop = bottomY - sedThk;
+
+  // honey-derived ramps
   const base = honey.color;
-  const liquidLight = shade(base, 46);
-  const liquidDark = shade(base, -46);
-  const surfaceCol = shade(base, 74);
+  const liq = [
+    shade(base, 62), shade(base, 30), base, shade(base, -26), shade(base, -52), shade(base, -82),
+  ];
+  const specular = shade(base, 86);
+  const foamA = blend(base, "#ffffff", 0.74);
+  const foamB = blend(base, "#ffffff", 0.52);
+  const foamEdge = blend(base, "#ffffff", 0.3);
+  const sedA = blend(base, "#3a2008", 0.6);
+  const sedB = blend(base, "#21130a", 0.74);
 
   const cells: Cell[] = [];
 
-  // ground shadow first (drawn under the vessel)
-  for (let x = CX - p.maxHW + 2; x <= CX + p.maxHW - 2; x++) {
-    cells.push([x, p.bodyBottom + 2, SHADOW]);
-    if (x > CX - p.maxHW + 6 && x < CX + p.maxHW - 6) cells.push([x, p.bodyBottom + 3, SHADOW]);
+  // soft dithered ground shadow
+  for (let x = CX - p.maxHW + 3; x <= CX + p.maxHW + (p.handle ? 6 : 3); x++) {
+    if (hash(x, 1) % 5 !== 0) cells.push([x, p.bodyBottom + 3, SHADOW]);
+    if (x > CX - p.maxHW + 9 && x < CX + p.maxHW - 6 && hash(x, 2) % 3 !== 0) {
+      cells.push([x, p.bodyBottom + 4, SHADOW]);
+    }
+  }
+
+  // handle (jug only) — glass tube bracket on the right
+  if (p.handle) {
+    const ox = CX + p.maxHW + 6;
+    const hTop = p.bodyTop + 16;
+    const hBot = p.bodyTop + 52;
+    for (let y = hTop; y <= hBot; y++) {
+      cells.push([ox, y, OUTLINE]);
+      cells.push([ox - 1, y, GLASS]);
+      cells.push([ox - 2, y, GLASS_SHADE]);
+      cells.push([ox - 3, y, OUTLINE]);
+      if (hash(ox, y) % 7 === 0) cells.push([ox - 1, y, SHINE]);
+    }
+    for (let x = CX + p.maxHW - 1; x <= ox; x++) {
+      cells.push([x, hTop, OUTLINE]);
+      cells.push([x, hBot, OUTLINE]);
+    }
   }
 
   // body + neck
@@ -143,84 +195,85 @@ function build(vessel: VesselKind, honeyType: HoneyType, liters: number, phase: 
     for (let x = left; x <= right; x++) {
       if (x === left || x === right) { cells.push([x, y, OUTLINE]); continue; }
       if (hasLiquid && y >= surfaceY) {
-        let c = liquidPixelColor(x, y, left, right, surfaceY, liquidLight, base, liquidDark, surfaceCol, viz.cloud);
-        cells.push([x, y, c]);
+        cells.push([x, y, liquidColor(
+          x, y, left, right, surfaceY, foamBottom, sedTop, bottomY,
+          liq, specular, foamA, foamB, foamEdge, sedA, sedB,
+        )]);
       } else {
-        let c: string = GLASS;
-        if (x === left + 2 || x === left + 3) c = SHINE;
-        else if (x >= right - 2) c = GLASS_SHADE;
-        cells.push([x, y, c]);
+        cells.push([x, y, glassColor(x, y, left, right, p)]);
       }
     }
-  }
-
-  // handle (jug only)
-  if (p.handle) {
-    const hx = CX + p.maxHW + 4;
-    const hTop = p.bodyTop + 14;
-    const hBot = p.bodyTop + 34;
-    for (let y = hTop; y <= hBot; y++) cells.push([hx, y, OUTLINE]);
-    for (let x = CX + p.maxHW; x <= hx; x++) { cells.push([x, hTop, OUTLINE]); cells.push([x, hBot, OUTLINE]); }
   }
 
   // cork or lid
   if (p.lid === "cork") {
-    const cw = p.neckHW + 1;
-    const cBot = p.neckTop + 1;
-    const cTop = cBot - 6;
+    const cw = p.neckHW + 2;
+    const cBot = p.neckTop + 2;
+    const cTop = cBot - 9;
     for (let y = cTop; y <= cBot; y++) {
       for (let x = CX - cw; x <= CX + cw; x++) {
         const edge = y === cTop || x === CX - cw || x === CX + cw;
-        cells.push([x, y, edge ? CORK_DK : CORK]);
+        let c = edge ? CORK_DK : CORK;
+        if (!edge && hash(x, y) % 4 === 0) c = CORK_HI;
+        if (!edge && hash(x, y * 3) % 5 === 0) c = CORK_DK;
+        cells.push([x, y, c]);
       }
     }
   } else {
-    const cw = p.maxHW + 1;
+    const cw = p.maxHW + 2;
     const lBot = p.bodyTop;
-    const lTop = lBot - 5;
+    const lTop = lBot - 7;
     for (let y = lTop; y <= lBot; y++) {
       for (let x = CX - cw; x <= CX + cw; x++) {
         const edge = y === lTop || x === CX - cw || x === CX + cw;
         cells.push([x, y, edge ? LID_DK : LID]);
       }
     }
+    // lid grip lip
+    for (let x = CX - cw - 1; x <= CX + cw + 1; x++) cells.push([x, lTop, LID_DK]);
   }
 
-  // airlock (cork vessels only): stem + bubbler bulb on top of the cork
+  // airlock — 3-piece bubbler cylinder on top of the cork
   let airlock: Built["airlock"] = null;
   if (p.lid === "cork") {
-    const corkTop = p.neckTop + 1 - 6;
-    // stem
-    for (let y = corkTop - 3; y <= corkTop - 1; y++) {
+    const corkTop = p.neckTop + 2 - 9;
+    // stem into cork
+    for (let y = corkTop - 4; y <= corkTop - 1; y++) {
       cells.push([CX - 1, y, OUTLINE]);
       cells.push([CX, y, GLASS]);
       cells.push([CX + 1, y, OUTLINE]);
     }
-    // bulb (rounded glass chamber)
-    const bTop = corkTop - 11;
-    const bBot = corkTop - 4;
-    for (let y = bTop; y <= bBot; y++) {
-      const bh = y === bTop || y === bBot ? 1 : 2;
-      for (let x = CX - bh; x <= CX + bh; x++) {
-        const edge = x === CX - bh || x === CX + bh || y === bTop || y === bBot;
-        if (edge) cells.push([x, y, OUTLINE]);
-        else cells.push([x, y, y >= corkTop - 7 ? AIR_WATER : GLASS]);
+    // cylinder chamber
+    const chTop = corkTop - 24;
+    const chBot = corkTop - 4;
+    const chHW = 4;
+    for (let y = chTop; y <= chBot; y++) {
+      for (let x = CX - chHW; x <= CX + chHW; x++) {
+        const edge = x === CX - chHW || x === CX + chHW || y === chTop || y === chBot;
+        if (edge) { cells.push([x, y, OUTLINE]); continue; }
+        // water sits in the lower half of the chamber
+        if (y >= corkTop - 16) cells.push([x, y, x <= CX - chHW + 2 ? AIR_WATER : blend(AIR_WATER, "#ffffff", 0.2)]);
+        else cells.push([x, y, x <= CX - chHW + 2 ? SHINE : GLASS]);
       }
     }
-    cells.push([CX, bTop - 1, OUTLINE]); // little cap
-    airlock = { active: viz.airlock && hasLiquid, x: CX, yLo: corkTop - 5, yHi: corkTop - 8 };
+    // floating inner cap + vented top cap
+    for (let x = CX - chHW + 1; x <= CX + chHW - 1; x++) cells.push([x, corkTop - 17, LID_DK]);
+    for (let x = CX - 2; x <= CX + 2; x++) cells.push([x, chTop - 1, OUTLINE]);
+    cells.push([CX, chTop - 2, OUTLINE]);
+    airlock = { active: viz.airlock && hasLiquid, x: CX, yLo: corkTop - 6, yHi: corkTop - 15 };
   }
 
   // bubbles
   const rng = mulberry(seed);
   const bubbles: Bubble[] = [];
   const count = hasLiquid ? viz.bubbles : 0;
+  const span = p.maxHW * 2 - 10;
   for (let i = 0; i < count; i++) {
     bubbles.push({
-      x: Math.round(CX - p.maxHW + 4 + rng() * (p.maxHW * 2 - 8)),
-      speed: viz.speed * (0.75 + rng() * 0.5),
+      x: Math.round(CX - p.maxHW + 5 + rng() * span),
+      speed: viz.speed * (0.7 + rng() * 0.6),
       offset: rng(),
-      big: rng() > 0.7,
+      big: rng() > 0.78,
     });
   }
 
@@ -228,21 +281,50 @@ function build(vessel: VesselKind, honeyType: HoneyType, liters: number, phase: 
     ? `${VESSELS[vessel].label} of ${honey.label} mead, ${phase} phase`
     : `Empty ${VESSELS[vessel].label}`;
 
-  return { cells, bubbles, surfaceY, bottomY, hasLiquid, airlock, ariaLabel };
+  return {
+    cells, bubbles,
+    bubbleTop: foamBottom + 1,
+    bubbleBottom: sedTop - 1,
+    hasLiquid, airlock, ariaLabel,
+  };
 }
 
-function liquidPixelColor(
-  x: number, y: number, left: number, right: number, surfaceY: number,
-  light: string, base: string, dark: string, surface: string, cloud: number,
+function liquidColor(
+  x: number, y: number, left: number, right: number,
+  surfaceY: number, foamBottom: number, sedTop: number, bottomY: number,
+  liq: string[], specular: string,
+  foamA: string, foamB: string, foamEdge: string, sedA: string, sedB: string,
 ): string {
-  if (y <= surfaceY + 1) return surface;          // surface meniscus
-  if (x === left + 2) return light;               // shine streak
-  if (x === left + 1 || x === right - 1) return dark; // edge shading
-  // cloudiness: sparse lighter speckle near the top third of the liquid
-  if (cloud > 0 && (x * 7 + y * 13) % 17 === 0 && y < surfaceY + 18) {
-    return cloud > 0.4 ? light : base;
+  // krausen foam ring
+  if (y < foamBottom) {
+    if (y === foamBottom - 1) return foamEdge;
+    return hash(x, y) % 2 === 0 ? foamA : foamB;
   }
-  return base;
+  // sediment / lees
+  if (y >= sedTop) {
+    const r = hash(x, y) % 3;
+    return r === 0 ? sedB : sedA;
+  }
+  // gradient body
+  const t = (y - foamBottom) / Math.max(1, sedTop - foamBottom);
+  let idx = clamp(Math.floor(t * liq.length), 0, liq.length - 1);
+  // subtle dither between bands
+  if (hash(x, y) % 2 === 0 && t * liq.length - idx > 0.55) idx = Math.min(idx + 1, liq.length - 1);
+  // edge shading near the glass walls
+  if (x <= left + 1 || x >= right - 1) idx = Math.min(idx + 1, liq.length - 1);
+  // broken specular streak on the upper-left
+  if ((x === left + 3 || x === left + 4) && hash(x, y) % 3 !== 0) return specular;
+  return liq[idx];
+}
+
+function glassColor(x: number, y: number, left: number, right: number, p: ShapeParams): string {
+  // bright shoulder highlight cluster (upper-left of the shoulder)
+  if (y >= p.shoulderTop && y < p.bodyTop && x > left + 2 && x < left + 7 && hash(x, y) % 4 !== 0) {
+    return SHINE;
+  }
+  if (x === left + 2 || x === left + 3) return SHINE;       // vertical specular streak
+  if (x >= right - 2) return GLASS_SHADE;                    // shaded right edge
+  return GLASS;
 }
 
 // tiny deterministic PRNG so a given batch always renders the same bubbles
@@ -275,20 +357,21 @@ export function PixelVessel({ vessel, honeyType, liters, phase, size = 200, anim
     const seed = seedFrom(`${vessel}|${honeyType}|${phase}`);
     const built = build(vessel, honeyType, liters, phase, seed);
 
+    // render the static art once onto an offscreen buffer
+    const off = document.createElement("canvas");
+    off.width = PW; off.height = PH;
+    const octx = off.getContext("2d")!;
+    octx.imageSmoothingEnabled = false;
+    for (const [x, y, c] of built.cells) { octx.fillStyle = c; octx.fillRect(x, y, 1, 1); }
+
     const reduced =
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-    const drawStatic = () => {
+    const noMotion = !animated || reduced || (built.bubbles.length === 0 && !built.airlock?.active);
+    if (noMotion) {
       ctx.clearRect(0, 0, PW, PH);
-      for (const [x, y, c] of built.cells) {
-        ctx.fillStyle = c;
-        ctx.fillRect(x, y, 1, 1);
-      }
-    };
-
-    if (!animated || reduced || (built.bubbles.length === 0 && !built.airlock?.active)) {
-      drawStatic();
+      ctx.drawImage(off, 0, 0);
       return;
     }
 
@@ -296,22 +379,23 @@ export function PixelVessel({ vessel, honeyType, liters, phase, size = 200, anim
     const start = performance.now();
     const loop = (now: number) => {
       const t = (now - start) / 1000;
-      drawStatic();
+      ctx.clearRect(0, 0, PW, PH);
+      ctx.drawImage(off, 0, 0);
       // rising fermentation bubbles
       for (const b of built.bubbles) {
         const prog = ((t / b.speed) + b.offset) % 1;
-        if (prog < 0.05 || prog > 0.95) continue; // fade at ends
-        const y = Math.round(lerp(built.bottomY, built.surfaceY + 1, prog));
-        const wob = Math.round(Math.sin((t + b.offset * 6) * 3) * 1);
+        if (prog < 0.04 || prog > 0.96) continue;
+        const y = Math.round(lerp(built.bubbleBottom, built.bubbleTop, prog));
+        const wob = Math.round(Math.sin((t + b.offset * 6) * 3));
         const x = b.x + wob;
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
         ctx.fillRect(x, y, 1, 1);
-        if (b.big) ctx.fillRect(x, y - 1, 1, 1);
+        if (b.big) { ctx.fillRect(x, y - 1, 1, 1); ctx.fillRect(x + 1, y, 1, 1); }
       }
-      // airlock bubble trickling through the water trap
+      // airlock bubble trickling up through the water trap
       if (built.airlock?.active) {
         const a = built.airlock;
-        const prog = (t / 1.3) % 1;
+        const prog = (t / 1.4) % 1;
         const y = Math.round(lerp(a.yLo, a.yHi, prog));
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(a.x, y, 1, 1);
