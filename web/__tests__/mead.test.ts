@@ -198,3 +198,27 @@ describe("potentialAbvToDry", () => {
     expect(potentialAbvToDry(0.995)).toBe(0);
   });
 });
+
+describe("startingGravity (juice / melomel)", () => {
+  it("juice adds sugar — gravity higher than the equivalent water-only must", () => {
+    const water = startingGravity({ honeyKg: 1, waterL: 3 });
+    const cider = startingGravity({ honeyKg: 1, waterL: 0, juiceL: 3, juiceType: "apple" });
+    expect(cider).toBeGreaterThan(water);
+  });
+  it("with no honey, juice alone gives a plausible cider-strength gravity (apple ~12 Bx)", () => {
+    const og = startingGravity({ honeyKg: 0, waterL: 0, juiceL: 3, juiceType: "apple" });
+    // 12 Bx * 0.004 SG/Bx ≈ 0.048 → SG ~ 1.048
+    expect(og).toBeGreaterThan(1.04);
+    expect(og).toBeLessThan(1.06);
+  });
+  it("juiceType undefined ignores any juice sugar (treats juice as water for volume)", () => {
+    const withJuice = startingGravity({ honeyKg: 1, waterL: 2, juiceL: 1 });
+    const allWater = startingGravity({ honeyKg: 1, waterL: 3 });
+    expect(withJuice).toBeCloseTo(allWater, 4);
+  });
+  it("measuredOG still wins when juice is present", () => {
+    expect(
+      startingGravity({ honeyKg: 1, waterL: 2, juiceL: 1, juiceType: "grape", measuredOG: 1.092 }),
+    ).toBe(1.092);
+  });
+});

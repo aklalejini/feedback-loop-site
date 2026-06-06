@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Mulish } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { UnitsToggle } from "@/components/UnitsToggle";
 import "./globals.css";
 
 const display = Fraunces({
@@ -51,11 +52,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <DropMark />
                 <span className="font-display text-2xl font-semibold tracking-tight">Mead Planner</span>
               </a>
-              <nav className="flex items-center gap-4 text-sm">
+              <nav className="flex items-center gap-3 text-sm">
                 <a href="/yeast" className="no-underline text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
                   Yeast guide
                 </a>
-                <span className="eyebrow hidden sm:inline">improving via daily loop</span>
+                <UnitsToggle />
               </nav>
             </div>
             <div className="divider mt-4" />

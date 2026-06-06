@@ -3,20 +3,27 @@ import { useState } from "react";
 import {
   type Mead,
   type HoneyType,
+  type JuiceKind,
   type YeastStrain,
   type VesselKind,
   type NitrogenNeed,
   HONEYS,
+  JUICES,
   YEASTS,
   VESSELS,
+  mustComposition,
   startingGravity,
   blankMead,
   fermentationRisks,
   gravitySource,
+  HONEY_DENSITY_L_PER_KG,
 } from "@/lib/mead";
 import { defaultNitrogenNeed, NITROGEN_NEED_LABELS } from "@/lib/nutrients";
+import { applyHoneyChangeKg, applyJuiceChangeL, applyWaterChangeL } from "@/lib/capacity";
+import { unitsFor } from "@/lib/units";
 import { NutrientSchedule } from "@/components/NutrientSchedule";
 import { SpriteVessel } from "@/components/SpriteVessel";
+import { useUnits } from "@/components/UnitsToggle";
 
 const NITROGEN_OPTS: NitrogenNeed[] = ["low", "medium", "high"];
 
@@ -27,27 +34,59 @@ interface Props {
   submitLabel?: string;
 }
 
-const HONEY_DENSITY = 0.7; // L per kg, matches lib/mead
 const COMMON_SPICES = ["cinnamon", "vanilla bean", "orange peel", "clove", "ginger", "elderberry"];
 
 export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batch" }: Props) {
   const [draft, setDraft] = useState<Mead>(() => initial ?? blankMead());
+  const [unitSystem] = useUnits();
+  const u = unitsFor(unitSystem);
 
   const update = <K extends keyof Mead>(key: K, value: Mead[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
   const vessel = VESSELS[draft.vessel];
-  const totalL = draft.waterL + draft.honeyKg * HONEY_DENSITY;
+  const composition = mustComposition(draft);
+  const totalL = composition.totalL;
   const isEmpty = totalL <= 0.01;
   const sg = startingGravity(draft);
   const estFG = 1 + (sg - 1) * (1 - YEASTS[draft.yeast].attenuationPct);
   const estABV = Math.max(0, (sg - estFG) * 131.25);
   const headspace = vessel.capacityL - totalL;
+  const atCapacity = headspace <= 0.01;
 
-  // when vessel changes, keep water within the new capacity
+  // Capacity-aware setters. Each takes the requested METRIC value and reduces
+  // the other ingredients proportionally if it would overflow the vessel.
+  const setHoneyKg = (newKg: number) =>
+    setDraft((d) => ({ ...d, ...applyHoneyChangeKg(d.honeyKg, d.waterL, d.juiceL ?? 0, newKg, VESSELS[d.vessel].capacityL) }));
+  const setWaterL = (newL: number) =>
+    setDraft((d) => ({ ...d, ...applyWaterChangeL(d.honeyKg, d.waterL, d.juiceL ?? 0, newL, VESSELS[d.vessel].capacityL) }));
+  const setJuiceL = (newL: number) =>
+    setDraft((d) => ({ ...d, ...applyJuiceChangeL(d.honeyKg, d.waterL, d.juiceL ?? 0, newL, VESSELS[d.vessel].capacityL) }));
+
+  const setJuiceType = (kind: JuiceKind | undefined) =>
+    setDraft((d) => ({
+      ...d,
+      juiceType: kind,
+      // If picking a juice for the first time, seed a small default volume; if
+      // clearing it, drop juice volume too. Push-down via setter keeps capacity.
+      juiceL: kind == null ? 0 : (d.juiceL && d.juiceL > 0 ? d.juiceL : Math.min(0.5, VESSELS[d.vessel].capacityL - (d.waterL + d.honeyKg * HONEY_DENSITY_L_PER_KG))),
+    }));
+
+  // when vessel changes, fit everything inside the new capacity proportionally
   const changeVessel = (kind: VesselKind) => {
     const cap = VESSELS[kind].capacityL;
-    setDraft((d) => ({ ...d, vessel: kind, waterL: Math.min(d.waterL, cap) }));
+    setDraft((d) => {
+      const usedL = d.waterL + (d.juiceL ?? 0) + d.honeyKg * HONEY_DENSITY_L_PER_KG;
+      if (usedL <= cap) return { ...d, vessel: kind };
+      const scale = usedL > 0 ? cap / usedL : 1;
+      return {
+        ...d,
+        vessel: kind,
+        honeyKg: d.honeyKg * scale,
+        waterL: d.waterL * scale,
+        juiceL: (d.juiceL ?? 0) * scale,
+      };
+    });
   };
 
   const toggleSpice = (s: string) =>
@@ -77,7 +116,9 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             />
           </div>
           <p className="text-xs text-[var(--muted)] mt-2">
-            {isEmpty ? "empty — add honey + water" : `${totalL.toFixed(1)} L in a ${vessel.capacityL.toFixed(1)} L vessel`}
+            {isEmpty
+              ? "empty — add honey + water (or juice)"
+              : `${u.toDisplayVolume(totalL).toFixed(1)} ${u.volume} in a ${u.toDisplayVolume(vessel.capacityL).toFixed(1)} ${u.volume} vessel`}
           </p>
         </div>
 
@@ -142,29 +183,86 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             </div>
           </Field>
 
-          {/* Amount sliders */}
+          {/* Juice picker (optional — for melomels) */}
+          <Field label="Fruit juice (optional)">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                aria-pressed={!draft.juiceType}
+                onClick={() => setJuiceType(undefined)}
+                className="opt px-2.5 py-1 text-xs font-semibold"
+              >
+                {!draft.juiceType ? "✓ " : ""}None
+              </button>
+              {Object.values(JUICES).map((j) => (
+                <button
+                  key={j.kind}
+                  type="button"
+                  aria-pressed={draft.juiceType === j.kind}
+                  onClick={() => setJuiceType(j.kind)}
+                  className="opt px-2.5 py-1 text-xs font-semibold flex items-center gap-1.5"
+                >
+                  <span
+                    aria-hidden
+                    className="inline-block h-2.5 w-2.5 rounded-sm border border-[var(--ink)]"
+                    style={{ background: j.color }}
+                  />
+                  {j.label}
+                </button>
+              ))}
+            </div>
+            {draft.juiceType ? (
+              <p className="text-xs text-[var(--muted)] mt-1">
+                {JUICES[draft.juiceType].note} <span className="text-[var(--ink-soft)]">≈ {JUICES[draft.juiceType].typicalBrix}° Brix typical</span>
+              </p>
+            ) : (
+              <p className="text-xs text-[var(--muted)] mt-1">Substitute or supplement water with juice to make a melomel.</p>
+            )}
+          </Field>
+
+          {/* Amount sliders — capacity-aware push-down (raising one reduces the
+              others proportionally; at capacity the slider stops). Honey is
+              in mass but counted in volume against the vessel. */}
           <div className="grid sm:grid-cols-2 gap-5">
-            <Slider
+            <CapSlider
               id="honeyKg"
               label="Honey"
-              unit="kg"
-              min={0}
-              max={6}
+              unit={u.weight}
+              displayValue={u.toDisplayWeight(draft.honeyKg)}
+              displayMax={u.toDisplayWeight(6)}
               step={0.1}
-              value={draft.honeyKg}
-              onChange={(v) => update("honeyKg", v)}
+              displayAtCapacity={atCapacity && draft.honeyKg > 0}
+              onChange={(displayVal) => setHoneyKg(u.fromDisplayWeight(displayVal))}
             />
-            <Slider
+            <CapSlider
               id="waterL"
               label="Water"
-              unit="L"
-              min={0}
-              max={Number(vessel.capacityL.toFixed(1))}
+              unit={u.volume}
+              displayValue={u.toDisplayVolume(draft.waterL)}
+              displayMax={u.toDisplayVolume(vessel.capacityL)}
               step={0.1}
-              value={draft.waterL}
-              onChange={(v) => update("waterL", v)}
+              displayAtCapacity={atCapacity && draft.waterL > 0}
+              onChange={(displayVal) => setWaterL(u.fromDisplayVolume(displayVal))}
             />
+            {draft.juiceType ? (
+              <CapSlider
+                id="juiceL"
+                label={`Juice (${JUICES[draft.juiceType].label})`}
+                unit={u.volume}
+                displayValue={u.toDisplayVolume(draft.juiceL ?? 0)}
+                displayMax={u.toDisplayVolume(vessel.capacityL)}
+                step={0.1}
+                displayAtCapacity={atCapacity && (draft.juiceL ?? 0) > 0}
+                onChange={(displayVal) => setJuiceL(u.fromDisplayVolume(displayVal))}
+              />
+            ) : null}
           </div>
+
+          {/* Capacity readout */}
+          <p className="text-xs text-[var(--muted)]">
+            {u.toDisplayVolume(totalL).toFixed(2)} / {u.toDisplayVolume(vessel.capacityL).toFixed(2)} {u.volume} used
+            {atCapacity ? <strong className="text-amber-900"> · at capacity</strong> : null}
+          </p>
 
           {/* Yeast cards */}
           <Field label="Yeast">
@@ -310,7 +408,7 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
 
       {headspace < vessel.capacityL * 0.05 && !isEmpty ? (
         <p className="text-sm text-red-800 bg-red-50 border border-red-300 rounded-md px-3 py-2">
-          Only {Math.max(0, headspace).toFixed(1)} L of headspace left — leave room so foaming mead doesn&apos;t push into the airlock.
+          Only {u.toDisplayVolume(Math.max(0, headspace)).toFixed(2)} {u.volume} of headspace left — leave room so foaming mead doesn&apos;t push into the airlock.
         </p>
       ) : null}
 
@@ -337,30 +435,43 @@ function Field({ label, htmlFor, children }: { label: string; htmlFor?: string; 
   );
 }
 
-function Slider({
-  id, label, unit, min, max, step, value, onChange,
+// Capacity-aware slider: shows the value in the user's chosen units, and uses
+// a high-resolution range (step) so push-down feels smooth. Bounding is enforced
+// by the parent — if a value would overflow, the parent reduces the others.
+function CapSlider({
+  id, label, unit, displayValue, displayMax, step, displayAtCapacity, onChange,
 }: {
-  id: string; label: string; unit: string; min: number; max: number; step: number;
-  value: number; onChange: (v: number) => void;
+  id: string;
+  label: string;
+  unit: string;
+  displayValue: number;
+  displayMax: number;
+  step: number;
+  displayAtCapacity: boolean;
+  onChange: (displayVal: number) => void;
 }) {
+  const safeMax = Math.max(step, displayMax);
   return (
     <div className="grid gap-1.5">
       <div className="flex items-baseline justify-between">
-        <label htmlFor={id} className="eyebrow text-[var(--ink-soft)]">{label}</label>
-        <span className="font-mono text-base tabular-nums">{value.toFixed(1)} {unit}</span>
+        <label htmlFor={id} className="eyebrow text-[var(--ink-soft)]">
+          {label}
+          {displayAtCapacity ? <span className="ml-2 text-[10px] font-semibold text-amber-900">vessel full</span> : null}
+        </label>
+        <span className="font-mono text-base tabular-nums">{displayValue.toFixed(2)} {unit}</span>
       </div>
       <input
         id={id}
         type="range"
-        min={min}
-        max={max}
+        min={0}
+        max={safeMax}
         step={step}
-        value={Math.min(value, max)}
+        value={Math.min(displayValue, safeMax)}
         onChange={(e) => onChange(Number(e.target.value))}
       />
       <div className="flex justify-between text-[10px] text-[var(--muted)] font-mono">
-        <span>{min} {unit}</span>
-        <span>{max} {unit}</span>
+        <span>0 {unit}</span>
+        <span>{safeMax.toFixed(1)} {unit}</span>
       </div>
     </div>
   );

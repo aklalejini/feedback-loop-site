@@ -118,7 +118,7 @@ export default function MeadDetailPage() {
           <SpriteVessel
             vessel={mead.vessel}
             honeyType={mead.honeyType}
-            liters={mead.waterL + mead.honeyKg * 0.7}
+            liters={mead.waterL + (mead.juiceL ?? 0) + mead.honeyKg * 0.7}
             phase={previewPhase ?? proj.currentPhase}
             size={200}
           />
