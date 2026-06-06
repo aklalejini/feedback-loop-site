@@ -16,7 +16,11 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
-from scipy.ndimage import label as cc_label
+from scipy.ndimage import (
+    binary_closing,
+    binary_fill_holes,
+    label as cc_label,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = ROOT / "web" / "public" / "vessels" / "raw"
@@ -58,26 +62,35 @@ def process(src_path: Path, kind: str) -> dict:
 
     bg = detect_bg_color(arr)
     dist = np.linalg.norm(arr.astype(float) - bg, axis=2)
-    bg_close = dist < 32  # cream-ish pixels (BG or interior cavity)
+    bg_close = dist < 36  # tight: only the flat background colour
 
-    # Background = the connected component of "cream" pixels reachable from corners.
+    # Background = the connected component of background pixels reachable from corners.
     labeled, _ = cc_label(bg_close)
-    bg_labels = set(int(labeled[0, 0]) for _ in [0]) | {
-        int(labeled[0, w - 1]), int(labeled[h - 1, 0]), int(labeled[h - 1, w - 1])
+    bg_labels = {
+        int(labeled[0, 0]), int(labeled[0, w - 1]),
+        int(labeled[h - 1, 0]), int(labeled[h - 1, w - 1]),
     }
     bg_mask = np.isin(labeled, list(bg_labels))
 
-    # Vessel mask = the inverse (silhouette including any interior cream pocket).
+    # Vessel mask = the inverse (solid silhouette: glass walls + cavity + ribs).
     vessel_mask = ~bg_mask
 
-    # Interior cavity = cream-coloured pixels INSIDE the vessel silhouette.
-    interior_candidate = vessel_mask & bg_close
-    interior_labeled, _ = cc_label(interior_candidate)
+    # Interior cavity = light pixels INSIDE the silhouette. Looser threshold so the
+    # glass-tinted interior near the walls is included, not just the bright centre.
+    light = dist < 78
+    interior_candidate = vessel_mask & light
+    # Bridge structural ribs / dividers (e.g. the 5-gallon carboy's bands) so the
+    # cavity reads as ONE region instead of a grid of disconnected cells.
+    closed = binary_closing(interior_candidate, structure=np.ones((3, 3), bool), iterations=8)
+    closed &= vessel_mask
+    interior_labeled, _ = cc_label(closed)
     sizes = np.bincount(interior_labeled.ravel())
-    sizes[0] = 0
+    sizes[0] = 0  # ignore background label
     interior_mask = np.zeros_like(vessel_mask)
     if sizes.size > 1 and sizes.max() > 0:
+        # largest enclosed region = the cavity; small ones (handle hole) are dropped
         interior_mask = (interior_labeled == sizes.argmax())
+        interior_mask = binary_fill_holes(interior_mask)
 
     # Build RGBA sprite: vessel pixels keep their colour; BG becomes transparent.
     # Interior cavity is also made transparent so the liquid layer shows through.
@@ -123,6 +136,33 @@ def process(src_path: Path, kind: str) -> dict:
     else:
         ibbox = {"x": 0, "y": 0, "w": w, "h": h}
 
+    # Fill range: liquid sits between the top of the STRAIGHT BODY (below the
+    # narrowing shoulder/neck) and the cavity bottom. Use the MEDIAN body width
+    # over the middle of the cavity as the reference, so a wide shadow fringe or
+    # a single fat row can't skew it.
+    row_w = np.array([int(interior_mask[y].sum()) for y in range(h)])
+    nz = np.where(row_w > 0)[0]
+    if nz.size:
+        cav_top, cav_bot = int(nz[0]), int(nz[-1])
+        ch = cav_bot - cav_top
+        mid = row_w[cav_top + int(0.2 * ch): cav_top + int(0.8 * ch) + 1]
+        mid = mid[mid > 0]
+        body_med = float(np.median(mid)) if mid.size else float(row_w.max())
+        top_candidates = np.where(row_w >= 0.8 * body_med)[0]
+        fill_top = int(top_candidates[0]) if top_candidates.size else cav_top
+        bot_candidates = np.where(row_w >= 0.5 * body_med)[0]
+        fill_bottom = int(bot_candidates[-1]) if bot_candidates.size else cav_bot
+    else:
+        fill_top = int(ibbox["y"])
+        fill_bottom = int(ibbox["y"] + ibbox["h"] - 1)
+
+    body_rows = interior_mask[fill_top:fill_bottom + 1]
+    bxs = np.where(body_rows.any(axis=0))[0]
+    if bxs.size:
+        body_bbox = {"x": int(bxs.min()), "w": int(bxs.max() - bxs.min() + 1)}
+    else:
+        body_bbox = {"x": ibbox["x"], "w": ibbox["w"]}
+
     # Pad top with HEADROOM transparent rows so the procedural cork + airlock
     # have somewhere to live above the imported vessel.
     rgba_padded = np.zeros((h + HEADROOM, w, 4), dtype=np.uint8)
@@ -146,6 +186,12 @@ def process(src_path: Path, kind: str) -> dict:
             "y": ibbox["y"] + HEADROOM,
             "w": ibbox["w"],
             "h": ibbox["h"],
+        },
+        "fill": {
+            "top": fill_top + HEADROOM,
+            "bottom": fill_bottom + HEADROOM,
+            "x": body_bbox["x"],
+            "w": body_bbox["w"],
         },
     }
 

@@ -25,6 +25,7 @@ interface Meta {
   headroom?: number;
   neck: { cx: number; y_top: number; y_bottom: number; width: number };
   interior: { x: number; y: number; w: number; h: number };
+  fill?: { top: number; bottom: number; x: number; w: number };
 }
 
 interface Assets {
@@ -172,10 +173,19 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
     const fill = liters <= 0.01 ? 0 : clamp(liters / capacity, 0.06, 0.95);
     const hasLiquid = fill > 0;
 
-    const intX = meta.interior.x;
-    const intW = meta.interior.w;
-    const intY1 = meta.interior.y + meta.interior.h;
-    const liquidH = Math.round(fill * meta.interior.h);
+    // Liquid sits between the top of the straight body and the cavity bottom,
+    // using the body bbox (not the handle) for width-based effects.
+    const fillMeta = meta.fill ?? {
+      top: meta.interior.y,
+      bottom: meta.interior.y + meta.interior.h,
+      x: meta.interior.x,
+      w: meta.interior.w,
+    };
+    const intX = fillMeta.x;
+    const intW = fillMeta.w;
+    const intY1 = fillMeta.bottom;
+    const fillRange = fillMeta.bottom - fillMeta.top;
+    const liquidH = Math.round(fill * fillRange);
     const liquidTop = intY1 - liquidH;
 
     // ----- liquid layer (offscreen, smooth, then clipped to interior mask) -----
@@ -251,7 +261,7 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
       ctx.drawImage(bg, 0, 0);          // liquid (behind glass)
       ctx.drawImage(sprite, 0, 0);      // the glass shell
       if (animated && hasLiquid && viz.bubbles > 0) {
-        drawBubbles(ctx, meta, liquidTop, intY1, viz, vessel, honeyType, phase, t);
+        drawBubbles(ctx, intX, intW, liquidTop, intY1, viz, vessel, honeyType, phase, t);
       }
       drawStopper();
       if (animated && viz.airlock && hasLiquid) drawAirlockBubble(ctx, meta, t);
@@ -381,13 +391,14 @@ function drawCorkAndAirlock(ctx: CanvasRenderingContext2D, meta: Meta) {
 }
 
 function drawBubbles(
-  ctx: CanvasRenderingContext2D, meta: Meta, liquidTop: number, liquidBottom: number,
+  ctx: CanvasRenderingContext2D, bodyX: number, bodyW: number,
+  liquidTop: number, liquidBottom: number,
   viz: PhaseViz, vessel: VesselKind, honeyType: HoneyType, phase: PhaseName, t: number,
 ) {
   const rng = mulberry(seedFrom(`${vessel}|${honeyType}|${phase}|b`));
-  const pad = meta.interior.w * 0.18;
-  const x0 = meta.interior.x + pad;
-  const x1 = meta.interior.x + meta.interior.w - pad;
+  const pad = bodyW * 0.18;
+  const x0 = bodyX + pad;
+  const x1 = bodyX + bodyW - pad;
   const top = liquidTop + (liquidBottom - liquidTop) * 0.12;
   const bot = liquidBottom - (liquidBottom - liquidTop) * 0.16;
   for (let i = 0; i < viz.bubbles; i++) {
