@@ -167,6 +167,36 @@ export function currentPhase(phases: Phase[], now: Date): PhaseName {
   return phases[0]?.name ?? "lag";
 }
 
+// A clearly-labeled example traditional mead so first-time visitors can see the
+// shape of the tool (vessel + timeline + stats) before filling the form.
+// 'Sample —' prefix and the SAMPLE_MEAD_NAME_PREFIX const keep it identifiable
+// in the list and let callers filter or dismiss it.
+export const SAMPLE_MEAD_NAME_PREFIX = "Sample — ";
+
+export function sampleMead(now: Date = new Date()): Mead {
+  // Standard traditional: ~1 kg orange-blossom honey in a 1-gallon jug, D-47.
+  // Backdated 21 days so the timeline lands in primary/secondary on first view.
+  const created = new Date(now.getTime() - 21 * 86400000);
+  return {
+    ...blankMead(`${SAMPLE_MEAD_NAME_PREFIX}Traditional`),
+    honeyType: "orange_blossom",
+    honeyKg: 1.0,
+    waterL: 2.8,
+    vessel: "jug-1gal",
+    yeast: "D-47",
+    spices: [],
+    createdAt: created.toISOString(),
+    observations: [
+      {
+        id: "sample-obs-1",
+        at: new Date(created.getTime() + 9 * 86400000).toISOString(),
+        gravity: 1.030,
+        note: "active fermentation, slowing — example reading",
+      },
+    ],
+  };
+}
+
 export function blankMead(name = "Untitled batch"): Mead {
   const id = typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
