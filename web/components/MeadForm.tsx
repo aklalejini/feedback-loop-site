@@ -69,13 +69,19 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
     setDraft((d) => ({ ...d, ...applyJuiceChangeL(d.honeyKg, d.waterL, d.juiceL ?? 0, newL, VESSELS[d.vessel].capacityL) }));
 
   const setJuiceType = (kind: JuiceKind | undefined) =>
-    setDraft((d) => ({
-      ...d,
-      juiceType: kind,
-      // If picking a juice for the first time, seed a small default volume; if
-      // clearing it, drop juice volume too. Push-down via setter keeps capacity.
-      juiceL: kind == null ? 0 : (d.juiceL && d.juiceL > 0 ? d.juiceL : Math.min(0.5, VESSELS[d.vessel].capacityL - (d.waterL + d.honeyKg * HONEY_DENSITY_L_PER_KG))),
-    }));
+    setDraft((d) => {
+      if (kind == null) return { ...d, juiceType: undefined, juiceL: 0 };
+      // Keep an existing juice amount when only switching the fruit.
+      if (d.juiceL && d.juiceL > 0) return { ...d, juiceType: kind };
+      // First time picking a juice: seed a real melomel fraction (~30% of the
+      // vessel) by displacing WATER (honey character is preserved). A token
+      // 0.5 L barely tinted the liquid, which is what made juice look like it
+      // did "nothing" on a full vessel.
+      const cap = VESSELS[d.vessel].capacityL;
+      const honeyL = d.honeyKg * HONEY_DENSITY_L_PER_KG;
+      const target = Math.min(cap * 0.3, Math.max(0, cap - honeyL));
+      return { ...d, juiceType: kind, juiceL: target, waterL: Math.max(0, cap - honeyL - target) };
+    });
 
   // when vessel changes, fit everything inside the new capacity proportionally
   const changeVessel = (kind: VesselKind) => {
