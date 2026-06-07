@@ -110,6 +110,11 @@ export interface Mead {
   nitrogenNeed?: NitrogenNeed;
   // Indices (0-3) of TOSNA nutrient additions the maker has marked as added.
   nutrientsDone?: number[];
+  // Optional style tag (Traditional / Sack / Cyser / ...) chosen via the style
+  // picker. Doesn't drive any math — display + re-seeding only.
+  style?: string;
+  // Optional target sweetness band (0..4) the maker designed toward.
+  targetSweetness?: number;
 }
 
 export interface Phase {

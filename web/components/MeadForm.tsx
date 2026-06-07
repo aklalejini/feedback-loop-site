@@ -20,11 +20,14 @@ import {
 } from "@/lib/mead";
 import { defaultNitrogenNeed, NITROGEN_NEED_LABELS } from "@/lib/nutrients";
 import { applyHoneyChangeKg, applyJuiceChangeL, applyWaterChangeL } from "@/lib/capacity";
+import { applySolvedRecipe, solveRecipe } from "@/lib/recipeSolver";
+import { STYLE_PROFILES, type StyleKind } from "@/lib/styles";
 import { unitsFor } from "@/lib/units";
 import { FlavorSummary } from "@/components/FlavorSummary";
 import { NutrientSchedule } from "@/components/NutrientSchedule";
 import { ProjectionStats } from "@/components/ProjectionStats";
 import { SpriteVessel } from "@/components/SpriteVessel";
+import { StylePicker } from "@/components/StylePicker";
 import { useUnits } from "@/components/UnitsToggle";
 
 const NITROGEN_OPTS: NitrogenNeed[] = ["low", "medium", "high"];
@@ -97,6 +100,39 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
       spices: d.spices.includes(s) ? d.spices.filter((x) => x !== s) : [...d.spices, s],
     }));
 
+  // Style + target-sweetness seeding. Picking either chip solves backward for
+  // honey/water/juice/yeast at the current vessel and applies it to the draft.
+  // After applying, every slider is still free to nudge — style is just a
+  // starting template, not a continuous binding.
+  const currentStyle = (draft.style as StyleKind | undefined) ?? "custom";
+  const currentSweetness = draft.targetSweetness ?? STYLE_PROFILES[currentStyle].defaultSweetness;
+
+  const [styleWarning, setStyleWarning] = useState<string | null>(null);
+  const seedFromStyle = (kind: StyleKind, sweetness?: number) => {
+    if (kind === "custom") {
+      // "Custom" just clears the tag — leave the user's current amounts alone.
+      setDraft((d) => ({ ...d, style: "custom", targetSweetness: undefined }));
+      setStyleWarning(null);
+      return;
+    }
+    const styleProfile = STYLE_PROFILES[kind];
+    const wantSweetness = sweetness ?? styleProfile.defaultSweetness;
+    // For melomel preserve the user's existing juice pick if any (they may
+    // have chosen tart cherry / pomegranate already); otherwise let the style
+    // dictate.
+    setDraft((d) => {
+      const carryJuice = kind === "melomel" && d.juiceType ? d.juiceType : undefined;
+      const solved = solveRecipe({
+        vesselCapacityL: VESSELS[d.vessel].capacityL,
+        style: kind,
+        targetSweetness: wantSweetness,
+        juiceType: carryJuice,
+      });
+      setStyleWarning(solved.warning ?? null);
+      return applySolvedRecipe(d, solved, kind);
+    });
+  };
+
   return (
     <form
       className="pixel-card p-5 sm:p-6 grid gap-6"
@@ -135,6 +171,19 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
               required
             />
           </Field>
+
+          {/* Style + target-sweetness picker — backward-designs the recipe */}
+          <StylePicker
+            style={currentStyle}
+            targetSweetness={currentSweetness}
+            onPickStyle={(k) => seedFromStyle(k)}
+            onPickSweetness={(s) => seedFromStyle(currentStyle, s)}
+          />
+          {styleWarning ? (
+            <p className="text-xs text-amber-900 bg-amber-50 border border-amber-300 rounded-md px-2.5 py-1.5">
+              {styleWarning}
+            </p>
+          ) : null}
 
           {/* Honey cards */}
           <Field label="Honey">
