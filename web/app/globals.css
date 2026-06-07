@@ -225,6 +225,47 @@ input[type="range"]::-moz-range-thumb {
 }
 input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 
+/* ---------- torch flicker ---------- */
+/* Soft warm glow over each baked-in wall torch (positions computed in
+   Torchlight.tsx so they track the cover background). Sits above the wall but
+   below content (z-index:-1) and never intercepts clicks. */
+.torchlight {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+.torch-glow {
+  position: absolute;
+  width: 300px;
+  height: 340px;
+  margin-left: -150px;
+  margin-top: -170px;
+  background:
+    radial-gradient(circle at 50% 46%,
+      rgba(255, 216, 140, 0.5),
+      rgba(255, 150, 60, 0.24) 30%,
+      rgba(255, 120, 40, 0.08) 56%,
+      transparent 72%);
+  transform-origin: 50% 62%;
+  will-change: opacity, transform;
+}
+.tg-a { animation: torch-flicker 3s infinite ease-in-out; }
+.tg-b { animation: torch-flicker 2.4s infinite ease-in-out; animation-delay: -0.9s; }
+
+@keyframes torch-flicker {
+  0%   { opacity: 0.80; transform: translateY(0)    scale(1.00); }
+  15%  { opacity: 1.00; transform: translateY(-2px) scale(1.05); }
+  30%  { opacity: 0.72; transform: translateY(0)    scale(0.98); }
+  45%  { opacity: 0.92; transform: translateY(-1px) scale(1.02); }
+  60%  { opacity: 0.64; transform: translateY(1px)  scale(0.96); }
+  75%  { opacity: 1.00; transform: translateY(-2px) scale(1.04); }
+  88%  { opacity: 0.82; transform: translateY(0)    scale(1.00); }
+  100% { opacity: 0.80; transform: translateY(0)    scale(1.00); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .opt, .btn, .btn-ghost, .in { transition: none; }
+  .torch-glow { animation: none; opacity: 0.85; }
 }
