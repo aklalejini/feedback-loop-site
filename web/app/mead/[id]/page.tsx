@@ -3,15 +3,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { MeadForm } from "@/components/MeadForm";
-import { FlavorSummary } from "@/components/FlavorSummary";
 import { ObservationLog } from "@/components/ObservationLog";
 import { NutrientSchedule } from "@/components/NutrientSchedule";
-import { ProjectionStats } from "@/components/ProjectionStats";
+import { SpecSheet } from "@/components/SpecSheet";
 import { Timeline } from "@/components/Timeline";
 import { SpriteVessel } from "@/components/SpriteVessel";
 import { events } from "@/lib/analytics";
 import { deleteMead, getMead, upsertMead } from "@/lib/storage";
-import { fermentationRisks, gravitySource, project, YEASTS, type Mead, type Observation, type PhaseName } from "@/lib/mead";
+import { fermentationRisks, project, YEASTS, type Mead, type Observation, type PhaseName } from "@/lib/mead";
 
 export default function MeadDetailPage() {
   const params = useParams<{ id: string }>();
@@ -139,11 +138,11 @@ export default function MeadDetailPage() {
           />
         </div>
         <div className="grid gap-4">
-          <ProjectionStats
+          <SpecSheet
+            mead={mead}
             startingGravity={proj.startingGravity}
             estFinalGravity={proj.estFinalGravity}
             estABV={proj.estABV}
-            source={gravitySource(mead)}
           />
           {fermentationRisks(proj.startingGravity, YEASTS[mead.yeast]).map((r) => (
             <p
@@ -174,13 +173,6 @@ export default function MeadDetailPage() {
           ) : (
             <p className="text-xs text-[var(--muted)]">Tip: click a phase above to preview the vessel at that point.</p>
           )}
-        </div>
-      </section>
-
-      <section className="grid gap-3">
-        <h2 className="text-2xl font-display">Likely taste</h2>
-        <div className="pixel-card-sm p-4">
-          <FlavorSummary mead={mead} />
         </div>
       </section>
 
