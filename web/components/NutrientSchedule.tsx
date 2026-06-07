@@ -17,16 +17,16 @@ interface Props {
 
 const STATUS_TAG: Record<AdditionStatus, { label: string; cls: string } | null> = {
   done: null,
-  overdue: { label: "overdue", cls: "text-red-800 bg-red-50 border-red-300" },
-  due: { label: "due today", cls: "text-amber-900 bg-amber-50 border-amber-300" },
+  overdue: { label: "overdue", cls: "alert-bad" },
+  due: { label: "due today", cls: "alert-warn" },
   upcoming: null,
 };
 
 // Date-column weight/colour per status, so the column tells you what to do now.
 const STATUS_DATE_CLS: Record<AdditionStatus, string> = {
   done: "text-[var(--muted)] line-through",
-  overdue: "text-red-800 font-bold",
-  due: "text-amber-900 font-bold",
+  overdue: "text-[var(--bad)] font-bold",
+  due: "text-[var(--warn)] font-bold",
   upcoming: "text-[var(--ink-soft)]",
 };
 

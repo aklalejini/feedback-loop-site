@@ -118,7 +118,7 @@ export default function MeadDetailPage() {
           <button
             type="button"
             onClick={handleDelete}
-            className="btn-ghost px-3 py-2 text-sm text-red-700"
+            className="btn-ghost px-3 py-2 text-sm text-[var(--bad)]"
           >
             Delete
           </button>
@@ -147,7 +147,7 @@ export default function MeadDetailPage() {
           {fermentationRisks(proj.startingGravity, YEASTS[mead.yeast]).map((r) => (
             <p
               key={r.kind}
-              className="text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-md px-3 py-2"
+              className="text-sm alert-warn rounded-md px-3 py-2"
             >
               {r.message}
             </p>
