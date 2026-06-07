@@ -6,6 +6,9 @@ interface Props {
   now?: Date;
   selectedPhase?: PhaseName | null;
   onSelectPhase?: (phase: PhaseName | null) => void;
+  // Hover/focus a phase to preview it (e.g. animate the vessel at that phase on
+  // the batch list). Fires the phase on enter/focus and null on leave/blur.
+  onHoverPhase?: (phase: PhaseName | null) => void;
 }
 
 const phaseLabel: Record<string, string> = {
@@ -54,7 +57,7 @@ function lineLeft(pct: number): React.CSSProperties {
 const MIN_INNER_LABEL_PCT = 13; // segments narrower than this drop their inner label
 const MIN_TICK_LABEL_GAP = 13;  // de-dup boundary date labels that crowd each other
 
-export function Timeline({ projection, now = new Date(), selectedPhase, onSelectPhase }: Props) {
+export function Timeline({ projection, now = new Date(), selectedPhase, onSelectPhase, onHoverPhase }: Props) {
   const phases = projection.phases;
   const start = new Date(phases[0].startsAt).getTime();
   const end = new Date(phases[phases.length - 1].endsAt).getTime();
@@ -87,7 +90,10 @@ export function Timeline({ projection, now = new Date(), selectedPhase, onSelect
 
         {/* the bar */}
         <div className="relative h-9 rounded-md overflow-hidden border border-[var(--line)] bg-[var(--card)] shadow-[inset_0_1px_2px_rgba(58,40,16,0.12)]">
-          <div className="flex h-full">
+          <div
+            className="flex h-full"
+            onMouseLeave={onHoverPhase ? () => onHoverPhase(null) : undefined}
+          >
             {phases.map((p, i) => {
               const width = pct(new Date(p.endsAt).getTime()) - pct(new Date(p.startsAt).getTime());
               const isSelected = selectedPhase === p.name;
@@ -104,7 +110,11 @@ export function Timeline({ projection, now = new Date(), selectedPhase, onSelect
                 filter: isSelected ? "brightness(1.15) saturate(1.1)" : undefined,
                 boxShadow: isSelected ? "inset 0 0 0 2.5px var(--accent-deep)" : undefined,
               };
-              const segTitle = `${phaseLabel[p.name]}: ${fmtDate(p.startsAt)} → ${fmtDate(p.endsAt)}${interactive ? "\nClick to preview the vessel at this phase." : ""}`;
+              const hoverable = typeof onHoverPhase === "function";
+              const hint = interactive
+                ? "\nClick to preview the vessel at this phase."
+                : hoverable ? "\nHover to preview the vessel at this phase." : "";
+              const segTitle = `${phaseLabel[p.name]}: ${fmtDate(p.startsAt)} → ${fmtDate(p.endsAt)}${hint}`;
               const inner = width >= MIN_INNER_LABEL_PCT ? (
                 <span className="flex items-center gap-1 truncate px-1 text-xs font-medium">
                   {phaseLabel[p.name]}
@@ -112,11 +122,30 @@ export function Timeline({ projection, now = new Date(), selectedPhase, onSelect
                 </span>
               ) : null;
               const common = "flex items-center justify-center h-full min-w-0 transition-[filter,opacity]";
+              const hoverHandlers = hoverable
+                ? {
+                    onMouseEnter: () => onHoverPhase?.(p.name),
+                    onFocus: () => onHoverPhase?.(p.name),
+                    onBlur: () => onHoverPhase?.(null),
+                  }
+                : {};
               if (interactive) {
                 return (
                   <button key={p.name + p.startsAt} type="button" style={segStyle} title={segTitle}
                     aria-pressed={isSelected} onClick={() => onSelectPhase?.(isSelected ? null : p.name)}
+                    {...hoverHandlers}
                     className={`${common} hover:brightness-110`}>
+                    {inner}
+                  </button>
+                );
+              }
+              // Non-interactive but hoverable: make segments focusable so the
+              // preview is reachable by keyboard too.
+              if (hoverable) {
+                return (
+                  <button key={p.name + p.startsAt} type="button" style={segStyle} title={segTitle}
+                    {...hoverHandlers}
+                    className={`${common} cursor-default`}>
                     {inner}
                   </button>
                 );
