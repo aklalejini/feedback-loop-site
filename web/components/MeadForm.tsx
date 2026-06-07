@@ -21,6 +21,7 @@ import {
 import { defaultNitrogenNeed, NITROGEN_NEED_LABELS } from "@/lib/nutrients";
 import { applyHoneyChangeKg, applyJuiceChangeL, applyWaterChangeL } from "@/lib/capacity";
 import { unitsFor } from "@/lib/units";
+import { FlavorSummary } from "@/components/FlavorSummary";
 import { NutrientSchedule } from "@/components/NutrientSchedule";
 import { ProjectionStats } from "@/components/ProjectionStats";
 import { SpriteVessel } from "@/components/SpriteVessel";
@@ -385,6 +386,12 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
           />
         )}
       </div>
+
+      {!isEmpty ? (
+        <div className="border-t border-[var(--line)] pt-4">
+          <FlavorSummary mead={draft} />
+        </div>
+      ) : null}
 
       {!isEmpty ? (
         <div className="border-t border-[var(--line)] pt-4">

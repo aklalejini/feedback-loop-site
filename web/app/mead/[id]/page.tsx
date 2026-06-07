@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { MeadForm } from "@/components/MeadForm";
+import { FlavorSummary } from "@/components/FlavorSummary";
 import { ObservationLog } from "@/components/ObservationLog";
 import { NutrientSchedule } from "@/components/NutrientSchedule";
 import { ProjectionStats } from "@/components/ProjectionStats";
@@ -171,6 +172,13 @@ export default function MeadDetailPage() {
           ) : (
             <p className="text-xs text-[var(--muted)]">Tip: click a phase above to preview the vessel at that point.</p>
           )}
+        </div>
+      </section>
+
+      <section className="grid gap-3">
+        <h2 className="text-2xl font-display">Likely taste</h2>
+        <div className="pixel-card-sm p-4">
+          <FlavorSummary mead={mead} />
         </div>
       </section>
 
