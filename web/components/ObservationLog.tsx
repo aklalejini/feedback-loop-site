@@ -88,7 +88,7 @@ export function ObservationLog({ observations, onAdd, onDelete }: Props) {
                 <button
                   type="button"
                   onClick={() => onDelete(o.id)}
-                  className="text-xs text-[var(--muted)] hover:text-red-700"
+                  className="text-xs text-[var(--muted)] hover:text-[var(--bad)]"
                   aria-label={`Delete observation from ${o.at}`}
                 >
                   delete

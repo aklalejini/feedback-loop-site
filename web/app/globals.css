@@ -3,21 +3,29 @@
 @tailwind utilities;
 
 :root {
-  --bg: #ece0c4;
-  --ink: #3a2a18;
-  /* ink-soft / muted darkened a further notch for AA contrast on the parchment
-     + cards, incl. small captions/labels — accessibility pass (review feedback). */
-  --ink-soft: #43301b;
-  --muted: #50401f;
-  --line: #d3bd92;
-  --line-soft: #e2d2ab;
-  --card: #fbf4e3;
-  --card-2: #f5ead2;
-  --accent: #b06e1c;
-  --accent-deep: #8a5310;
-  --accent-glow: #e3a23e;
-  --green: #386b5b;
-  --green-deep: #2b5446;
+  /* Dark "torchlit dungeon" theme — light warm ink on dark stone, amber torch
+     accents that echo the wall sconces. */
+  --bg: #14110b;
+  --ink: #f1e8d4;
+  --ink-soft: #d6c8a8;
+  --muted: #9c8c6f;
+  --line: #4c4131;
+  --line-soft: #322a20;
+  /* panels are dark, slightly translucent stone so the wall reads behind them */
+  --card: rgba(32, 27, 19, 0.9);
+  --card-2: rgba(45, 38, 26, 0.92);
+  --accent: #d98a2b;
+  --accent-deep: #a5641a;
+  --accent-glow: #f3ad49;
+  --green: #7cc3a6;
+  --green-deep: #5fa98a;
+  /* status colours tuned for dark backgrounds */
+  --warn: #f0b65c;
+  --warn-bg: rgba(120, 80, 22, 0.24);
+  --warn-line: rgba(214, 160, 70, 0.5);
+  --bad: #ef9f9a;
+  --bad-bg: rgba(122, 42, 38, 0.26);
+  --bad-line: rgba(220, 124, 118, 0.46);
 }
 
 html, body {
@@ -25,23 +33,25 @@ html, body {
   font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Warm, candlelit parchment: a soft top glow, a gentle vignette, and a faint
-   paper grain — all on the fixed background so the page feels like aged paper. */
+/* Torchlit stone hall: the dungeon photo fixed behind everything, with a soft
+   dark scrim to deepen it and keep light text legible over the brickwork. */
 body {
   background-color: var(--bg);
   background-image:
-    radial-gradient(130% 100% at 50% -8%, rgba(255, 249, 233, 0.55), transparent 55%),
-    radial-gradient(100% 100% at 50% 50%, transparent 58%, rgba(58, 40, 16, 0.16) 100%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-  background-attachment: fixed;
-  background-size: cover, cover, 160px 160px;
-  background-blend-mode: normal, normal, multiply;
+    linear-gradient(rgba(12, 9, 5, 0.34), rgba(12, 9, 5, 0.32)),
+    url("/bg-dungeon.png");
+  background-attachment: fixed, fixed;
+  background-position: center top, center top;
+  background-size: cover, cover;
+  background-repeat: no-repeat, no-repeat;
 }
 
 h1, h2, h3, h4 {
   font-family: var(--font-display), ui-serif, Georgia, serif;
   color: var(--ink);
 }
+/* headings sit directly on the stone, so give them a subtle shadow for crispness */
+h1, h2 { text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55); }
 
 a { color: var(--green); text-underline-offset: 2px; }
 a:hover { text-decoration: underline; }
@@ -57,7 +67,7 @@ button, input, select, textarea { font: inherit; }
   letter-spacing: 0.16em;
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--accent-glow);
 }
 
 /* Hairline divider with a warm fade */
@@ -66,25 +76,39 @@ button, input, select, textarea { font: inherit; }
   background: linear-gradient(90deg, var(--line) 0%, var(--line) 40%, transparent 100%);
 }
 
+/* ---------- status banners (dark-friendly) ---------- */
+.alert-warn {
+  color: var(--warn);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
+}
+.alert-bad {
+  color: var(--bad);
+  background: var(--bad-bg);
+  border: 1px solid var(--bad-line);
+}
+
 /* ---------- surfaces ---------- */
 .pixel-card {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 22%),
+    linear-gradient(180deg, rgba(255, 240, 214, 0.06), rgba(255, 240, 214, 0) 24%),
     var(--card);
   border: 1px solid var(--line);
   border-radius: 8px;
+  backdrop-filter: blur(2px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    0 8px 22px -12px rgba(58, 40, 16, 0.4),
-    0 1px 2px rgba(58, 40, 16, 0.1);
+    inset 0 1px 0 rgba(255, 235, 200, 0.08),
+    0 12px 28px -14px rgba(0, 0, 0, 0.75),
+    0 1px 2px rgba(0, 0, 0, 0.4);
 }
 .pixel-card-sm {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 6px;
+  backdrop-filter: blur(2px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 4px 12px -8px rgba(58, 40, 16, 0.35);
+    inset 0 1px 0 rgba(255, 235, 200, 0.07),
+    0 6px 16px -10px rgba(0, 0, 0, 0.7);
 }
 
 /* ---------- selectable option cards ---------- */
@@ -97,13 +121,13 @@ button, input, select, textarea { font: inherit; }
 }
 .opt:hover {
   border-color: var(--accent);
-  box-shadow: 0 6px 14px -8px rgba(58, 40, 16, 0.45);
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.7);
   transform: translateY(-1px);
 }
 .opt[aria-pressed="true"] {
   border-color: var(--accent);
   background: var(--card-2);
-  box-shadow: 0 0 0 2px rgba(176, 110, 28, 0.28), 0 6px 14px -8px rgba(58, 40, 16, 0.4);
+  box-shadow: 0 0 0 2px rgba(217, 138, 43, 0.4), 0 6px 16px -8px rgba(0, 0, 0, 0.65);
 }
 
 /* ---------- buttons ---------- */
@@ -113,16 +137,17 @@ button, input, select, textarea { font: inherit; }
   justify-content: center;
   gap: 0.4rem;
   background: linear-gradient(180deg, var(--accent-glow), var(--accent));
-  color: #fff8ec;
+  color: #2a1a08;
   border: 1px solid var(--accent-deep);
   border-radius: 7px;
   font-weight: 700;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    0 6px 14px -7px rgba(138, 83, 16, 0.7);
+    inset 0 1px 0 rgba(255, 240, 210, 0.45),
+    0 0 18px -4px rgba(243, 173, 73, 0.45),
+    0 6px 14px -7px rgba(0, 0, 0, 0.7);
   transition: transform 0.08s ease, filter 0.08s ease, box-shadow 0.08s ease;
 }
-.btn:hover { transform: translateY(-1px); filter: brightness(1.04); }
+.btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
 .btn:active { transform: translateY(0); filter: brightness(0.96); }
 
 .btn-ghost {
@@ -135,7 +160,7 @@ button, input, select, textarea { font: inherit; }
   border: 1px solid var(--line);
   border-radius: 7px;
   font-weight: 600;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 4px 10px -8px rgba(58, 40, 16, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 235, 200, 0.08), 0 4px 12px -8px rgba(0, 0, 0, 0.6);
   transition: transform 0.08s ease, border-color 0.08s ease;
 }
 .btn-ghost:hover { transform: translateY(-1px); border-color: var(--accent); }
@@ -143,19 +168,19 @@ button, input, select, textarea { font: inherit; }
 /* ---------- form fields ---------- */
 .in {
   width: 100%;
-  background: #fffdf7;
+  background: rgba(18, 14, 8, 0.85);
   color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 0.55rem 0.75rem;
-  box-shadow: inset 0 1px 2px rgba(58, 40, 16, 0.08);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
   transition: border-color 0.08s ease, box-shadow 0.08s ease;
 }
-.in::placeholder { color: #8a7448; }
+.in::placeholder { color: #8a7c5e; }
 .in:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(176, 110, 28, 0.18), inset 0 1px 2px rgba(58, 40, 16, 0.08);
+  box-shadow: 0 0 0 3px rgba(217, 138, 43, 0.25), inset 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
 /* ---------- range slider (warm, crafted, but smooth) ---------- */
@@ -170,13 +195,13 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-runnable-track {
   height: 8px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #e8d6ad, #f3e8cd);
+  background: linear-gradient(180deg, #2a2318, #38301f);
   border: 1px solid var(--line);
 }
 input[type="range"]::-moz-range-track {
   height: 8px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #e8d6ad, #f3e8cd);
+  background: linear-gradient(180deg, #2a2318, #38301f);
   border: 1px solid var(--line);
 }
 input[type="range"]::-webkit-slider-thumb {
@@ -188,7 +213,7 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 999px;
   background: radial-gradient(circle at 35% 30%, var(--accent-glow), var(--accent));
   border: 1px solid var(--accent-deep);
-  box-shadow: 0 2px 5px -1px rgba(138, 83, 16, 0.5);
+  box-shadow: 0 0 10px -2px rgba(243, 173, 73, 0.6), 0 2px 5px -1px rgba(0, 0, 0, 0.6);
 }
 input[type="range"]::-moz-range-thumb {
   height: 20px;
@@ -196,7 +221,7 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 999px;
   background: radial-gradient(circle at 35% 30%, var(--accent-glow), var(--accent));
   border: 1px solid var(--accent-deep);
-  box-shadow: 0 2px 5px -1px rgba(138, 83, 16, 0.5);
+  box-shadow: 0 0 10px -2px rgba(243, 173, 73, 0.6), 0 2px 5px -1px rgba(0, 0, 0, 0.6);
 }
 input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 

@@ -216,7 +216,7 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             onPickSweetness={(s) => seedFromStyle(currentStyle, s)}
           />
           {styleWarning ? (
-            <p className="text-xs text-amber-900 bg-amber-50 border border-amber-300 rounded-md px-2.5 py-1.5">
+            <p className="text-xs alert-warn rounded-md px-2.5 py-1.5">
               {styleWarning}
             </p>
           ) : null}
@@ -325,7 +325,7 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
           {/* Capacity readout */}
           <p className="text-xs text-[var(--muted)]">
             {u.toDisplayVolume(totalL).toFixed(2)} / {u.toDisplayVolume(vessel.capacityL).toFixed(2)} {u.volume} used
-            {atCapacity ? <strong className="text-amber-900"> · at capacity</strong> : null}
+            {atCapacity ? <strong className="text-[var(--warn)]"> · at capacity</strong> : null}
           </p>
 
           {/* Yeast cards */}
@@ -460,7 +460,7 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
         ? fermentationRisks(sg, YEASTS[draft.yeast]).map((r) => (
             <p
               key={r.kind}
-              className="text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-md px-3 py-2"
+              className="text-sm alert-warn rounded-md px-3 py-2"
             >
               {r.message}
             </p>
@@ -523,7 +523,7 @@ function CapSlider({
       <div className="flex items-baseline justify-between gap-2">
         <label htmlFor={id} className="eyebrow text-[var(--ink-soft)]">
           {label}
-          {displayAtCapacity ? <span className="ml-2 text-[10px] font-semibold text-amber-900">vessel full</span> : null}
+          {displayAtCapacity ? <span className="ml-2 text-[10px] font-semibold text-[var(--warn)]">vessel full</span> : null}
         </label>
         <span className="flex items-baseline gap-1">
           <input

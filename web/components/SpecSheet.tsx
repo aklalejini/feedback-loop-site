@@ -59,7 +59,7 @@ export function SpecSheet({ mead, startingGravity, estFinalGravity, estABV }: Pr
         ))}
       </ul>
 
-      {flavor.caveat ? <p className="text-xs text-amber-900">{flavor.caveat}</p> : null}
+      {flavor.caveat ? <p className="text-xs text-[var(--warn)]">{flavor.caveat}</p> : null}
 
       <p className="text-xs text-[var(--muted)]">
         {measured
