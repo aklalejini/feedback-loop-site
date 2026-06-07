@@ -1,0 +1,30 @@
+{
+  "w": 480,
+  "h": 480,
+  "headroom": 0,
+  "bg": [
+    254,
+    254,
+    254
+  ],
+  "neck": {
+    "cx": 304,
+    "y_top": 53,
+    "y_bottom": 97,
+    "width": 24
+  },
+  "interior": {
+    "x": 0,
+    "y": 0,
+    "w": 480,
+    "h": 480
+  },
+  "fill": {
+    "top": 0,
+    "bottom": 479,
+    "x": 0,
+    "w": 480
+  },
+  "artAirlock": true,
+  "solid": true
+}

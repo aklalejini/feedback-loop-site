@@ -27,6 +27,10 @@ interface Meta {
   neck: { cx: number; y_top: number; y_bottom: number; width: number };
   interior: { x: number; y: number; w: number; h: number };
   fill?: { top: number; bottom: number; x: number; w: number };
+  // the source art already includes a lid + airlock → don't draw the procedural one
+  artAirlock?: boolean;
+  // opaque vessel (bucket) — no visible interior, so no liquid is drawn
+  solid?: boolean;
 }
 
 interface Assets {
@@ -172,7 +176,8 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
     const viz = PHASE_VIZ[phase];
     const capacity = VESSELS[vessel].capacityL;
     const fill = liters <= 0.01 ? 0 : clamp(liters / capacity, 0.06, 0.95);
-    const hasLiquid = fill > 0;
+    // Opaque vessels (buckets) never show liquid through the walls.
+    const hasLiquid = fill > 0 && !meta.solid;
 
     // Liquid sits between the top of the straight body and the cavity bottom,
     // using the body bbox (not the handle) for width-based effects.
@@ -282,7 +287,8 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
     sx.globalCompositeOperation = "multiply";
     sx.drawImage(sprite, 0, 0);
     sx.globalCompositeOperation = "source-over";
-    drawCorkAndAirlock(sx, meta);
+    // Only draw the procedural cork + airlock when the art doesn't already have one.
+    if (!meta.artAirlock) drawCorkAndAirlock(sx, meta);
 
     const drawFrame = (t: number) => {
       ctx.clearRect(0, 0, meta.w, meta.h);
@@ -290,7 +296,7 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
       if (animated && hasLiquid && viz.bubbles > 0) {
         drawBubbles(ctx, intX, intW, liquidTop, intY1, viz, vessel, honeyType, phase, t);
       }
-      if (animated && viz.airlock && hasLiquid) drawAirlockBubble(ctx, meta, t);
+      if (animated && viz.airlock && hasLiquid && !meta.artAirlock) drawAirlockBubble(ctx, meta, t);
     };
 
     const reduced =
