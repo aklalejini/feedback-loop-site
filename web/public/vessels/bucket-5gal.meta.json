@@ -26,5 +26,13 @@
     "w": 233
   },
   "artAirlock": true,
-  "solid": true
+  "solid": true,
+  "liquid": {
+    "cx": 242,
+    "yTop": 196,
+    "wTop": 236,
+    "yFloor": 392,
+    "wFloor": 204,
+    "ellipse": 0.2
+  }
 }

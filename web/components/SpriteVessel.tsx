@@ -36,8 +36,20 @@ interface Meta {
   fill?: { top: number; bottom: number; x: number; w: number };
   // the source art already includes a lid + airlock → don't draw the procedural one
   artAirlock?: boolean;
-  // opaque vessel (bucket) — no visible interior, so no liquid is drawn
+  // opaque vessel (bucket) — the liquid is faked as a see-through level
   solid?: boolean;
+  // For solid vessels: the interior liquid cavity, used to paint a faux
+  // see-through level that follows the tapered walls. The body is drawn as a
+  // barrel — tapered side walls with elliptical surface + floor (we view the
+  // vessel slightly from above, so horizontal circles read as ellipses).
+  liquid?: {
+    cx: number;        // centre x of the cavity
+    yTop: number;      // surface centre-y when full (leaves headspace below lid)
+    wTop: number;      // liquid width at the full surface
+    yFloor: number;    // interior floor centre-y (where the liquid bottoms out)
+    wFloor: number;    // liquid width at the floor (follows the wall, not the foot)
+    ellipse: number;   // foreshortening of horizontal circles (minor / major)
+  };
 }
 
 interface Assets {
@@ -307,11 +319,10 @@ export function SpriteVessel({ vessel, honeyType, juiceType, juiceL, liters, pha
     sx.globalCompositeOperation = "source-over";
     // Only draw the procedural cork + airlock when the art doesn't already have one.
     if (!meta.artAirlock) drawCorkAndAirlock(sx, meta);
-    // Opaque vessels (buckets) show their level as a faux see-through line + a
-    // subtle amber wash below it — the wall stays painted, but the maker can read
-    // the volume at a glance. Skipped when there's no liquid.
+    // Opaque vessels (buckets): paint a faux see-through level that fills the
+    // tapered interior (barrel-shaped) so the maker can read the volume.
     if (meta.solid && fill > 0) {
-      drawSolidLevel(sx, sprite, meta, liquidTop, intY1, intX, intW, pal);
+      drawSolidLevel(sx, meta, fill, pal);
     }
 
     const drawFrame = (t: number) => {
@@ -367,62 +378,86 @@ export function SpriteVessel({ vessel, honeyType, juiceType, juiceL, liters, pha
   );
 }
 
-// Faux see-through level indicator for opaque vessels (buckets). The level wash
-// is painted on its own layer and then clipped to the bucket silhouette (the
-// sprite's alpha), so the amber fill follows the tapered walls instead of
-// sitting as a flat rectangle. Read by makers as "the bucket is partly
-// translucent and I can see the mead behind the wall."
+// Faux see-through level for opaque vessels (buckets). The liquid is drawn as a
+// barrel that fills the tapered interior: straight side walls between an
+// elliptical surface (bulging up at the back) and an elliptical floor (bulging
+// down at the front), because we view the vessel slightly from above. The foot
+// of the bucket flares out wider than the walls, so the liquid follows the wall
+// taper — not the silhouette — and bottoms out at the interior floor, leaving
+// the foot showing below it. Read by makers as "the bucket is partly
+// translucent and I can see the mead inside."
 function drawSolidLevel(
   ctx: CanvasRenderingContext2D,
-  sprite: HTMLImageElement,
   meta: Meta,
-  liquidTop: number,
-  bodyBottom: number,
-  bodyX: number,
-  bodyW: number,
+  fill: number,
   pal: Palette,
 ) {
-  if (bodyW <= 0 || bodyBottom <= liquidTop) return;
-  const W = meta.w;
-  const H = meta.h;
-  const layer = document.createElement("canvas");
-  layer.width = W;
-  layer.height = H;
-  const lx = layer.getContext("2d");
-  if (!lx) return;
-  lx.imageSmoothingEnabled = true;
+  const Lq = meta.liquid;
+  if (!Lq) return;
+  const f = clamp(fill, 0, 1);
+  const cx = Lq.cx;
+  const yFloor = Lq.yFloor;
+  // Surface rises from the floor toward the full mark with the fill fraction;
+  // the liquid narrows toward the floor along the wall taper.
+  const ySurf = yFloor - f * (yFloor - Lq.yTop);
+  const wSurf = Lq.wFloor + f * (Lq.wTop - Lq.wFloor);
+  const halfTop = wSurf / 2;
+  const halfFloor = Lq.wFloor / 2;
+  const eTop = Lq.ellipse * halfTop;     // surface ellipse half-height
+  const eFloor = Lq.ellipse * halfFloor; // floor ellipse half-height
 
-  // vertical amber wash — transparent at the surface, deepening downward. Kept
-  // moderate so the bucket still reads as an opaque vessel.
-  const wash = lx.createLinearGradient(0, liquidTop, 0, bodyBottom);
-  wash.addColorStop(0, pal.body + "00");
-  wash.addColorStop(0.12, pal.body + "55");
-  wash.addColorStop(1, pal.deep + "7a");
-  lx.fillStyle = wash;
-  lx.fillRect(0, liquidTop, W, bodyBottom - liquidTop);
+  // Barrel outline: surface back-arc (up) · right wall · floor front-arc (down) · left wall.
+  const body = new Path2D();
+  body.moveTo(cx - halfTop, ySurf);
+  body.quadraticCurveTo(cx, ySurf - 2 * eTop, cx + halfTop, ySurf);
+  body.lineTo(cx + halfFloor, yFloor);
+  body.quadraticCurveTo(cx, yFloor + 2 * eFloor, cx - halfFloor, yFloor);
+  body.closePath();
 
-  // horizontal rounding so the tinted wall reads as a curved surface, not a flat
-  // panel — darker at the edges, a soft sheen left-of-centre.
-  const hg = lx.createLinearGradient(bodyX, 0, bodyX + bodyW, 0);
-  hg.addColorStop(0.0, "rgba(40,20,0,0.22)");
-  hg.addColorStop(0.18, "rgba(0,0,0,0)");
+  const top = ySurf - eTop;
+  const bottom = yFloor + eFloor;
+  const left = cx - halfTop - 4;
+  const boxW = wSurf + 8;
+
+  ctx.save();
+  ctx.clip(body);
+
+  // vertical wash — translucent so the bucket still reads as opaque, deepening
+  // toward the floor.
+  const wash = ctx.createLinearGradient(0, top, 0, bottom);
+  wash.addColorStop(0, pal.body + "4d");
+  wash.addColorStop(0.5, pal.body + "63");
+  wash.addColorStop(1, pal.deep + "82");
+  ctx.fillStyle = wash;
+  ctx.fillRect(left, top - 2, boxW, bottom - top + 4);
+
+  // horizontal rounding so the column reads as a curved surface, not flat
+  const hg = ctx.createLinearGradient(cx - halfTop, 0, cx + halfTop, 0);
+  hg.addColorStop(0.0, "rgba(40,20,0,0.24)");
+  hg.addColorStop(0.16, "rgba(0,0,0,0)");
   hg.addColorStop(0.4, "rgba(255,250,235,0.10)");
-  hg.addColorStop(0.62, "rgba(0,0,0,0)");
+  hg.addColorStop(0.6, "rgba(0,0,0,0)");
   hg.addColorStop(1.0, "rgba(35,18,0,0.28)");
-  lx.fillStyle = hg;
-  lx.fillRect(bodyX - 24, liquidTop, bodyW + 48, bodyBottom - liquidTop);
+  ctx.fillStyle = hg;
+  ctx.fillRect(left, top - 2, boxW, bottom - top + 4);
+  ctx.restore();
 
-  // bright meniscus line at the surface + a soft shadow just beneath it
-  lx.fillStyle = "rgba(255,250,235,0.6)";
-  lx.fillRect(0, liquidTop, W, 1.5);
-  lx.fillStyle = "rgba(60,35,5,0.3)";
-  lx.fillRect(0, liquidTop + 1.5, W, 1);
-
-  // clip the whole wash to the bucket silhouette so it hugs the tapered walls
-  lx.globalCompositeOperation = "destination-in";
-  lx.drawImage(sprite, 0, 0);
-
-  ctx.drawImage(layer, 0, 0);
+  // The liquid surface (elliptical top) — a touch lighter, with a bright rim on
+  // the far edge where it catches light.
+  ctx.save();
+  const sg = ctx.createLinearGradient(0, ySurf - eTop, 0, ySurf + eTop);
+  sg.addColorStop(0, pal.top + "b3");
+  sg.addColorStop(1, pal.surface + "59");
+  ctx.fillStyle = sg;
+  ctx.beginPath();
+  ctx.ellipse(cx, ySurf, halfTop, eTop, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "rgba(255,252,244,0.7)";
+  ctx.beginPath();
+  ctx.ellipse(cx, ySurf, halfTop, eTop, 0, Math.PI, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 // soft elliptical ground shadow under the vessel
