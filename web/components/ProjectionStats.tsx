@@ -49,32 +49,34 @@ function StatCard({ tag, label, value }: { tag: string; label: string; value: Re
   );
 }
 
-// A clean, monotonic gravity chart: a single straight descent from OG (high,
-// left) to FG (low, right) with labeled endpoints — gravity only ever drops, so
-// a straight line can't imply a rise. Endpoints are dotted + labeled; the points
-// dropped are called out.
+// Gravity as two comparison bars (sugar above 1.000): OG full, FG shorter. Bars
+// are meant to span the width, so this never reads as a "stretched" line, and the
+// short FG bar makes the drop obvious. The honest framing is "how much sugar is
+// left vs. fermented".
 function GravityBar({ og, fg }: { og: number; fg: number }) {
-  const points = Math.max(0, Math.round((og - fg) * 1000));
-  const W = 240, H = 48, x0 = 12, x1 = W - 12, yTop = 12, yBot = H - 14;
-  const line = `M ${x0} ${yTop} L ${x1} ${yBot}`;
-  const area = `${line} L ${x1} ${H - 2} L ${x0} ${H - 2} Z`;
+  const ogPts = Math.max(0.0001, (og - 1) * 1000);
+  const fgPts = Math.max(0, (fg - 1) * 1000);
+  const fgPctOfOg = Math.min(100, (fgPts / ogPts) * 100);
+  const dropped = Math.max(0, Math.round(ogPts - fgPts));
   return (
-    <div className="grid gap-1">
-      <div className="flex items-stretch gap-2">
-        <span className="font-mono text-[11px] text-[var(--ink-soft)] self-start leading-none pt-1">OG</span>
-        <svg viewBox={`0 0 ${W} ${H}`} className="flex-1 h-12" preserveAspectRatio="none" aria-hidden>
-          <line x1={x0} y1={H - 2} x2={x1} y2={H - 2} stroke="var(--line)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-          <path d={area} fill="var(--accent)" opacity="0.12" />
-          <path d={line} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-          <circle cx={x0} cy={yTop} r="4" fill="var(--accent)" />
-          <circle cx={x1} cy={yBot} r="4" fill="var(--accent-deep)" />
-        </svg>
-        <span className="font-mono text-[11px] text-[var(--ink-soft)] self-end leading-none pb-1">FG</span>
-      </div>
+    <div className="grid gap-1.5">
+      <GravityRow label="OG" value={og.toFixed(3)} pct={100} color="var(--accent)" />
+      <GravityRow label="FG" value={fg.toFixed(3)} pct={fgPctOfOg} color="var(--accent-deep)" />
       <p className="text-xs text-[var(--ink-soft)] font-mono">
-        {og.toFixed(3)} <span aria-hidden>↓</span> {fg.toFixed(3)}
-        <span className="text-[var(--muted)]"> · −{points} pts</span>
+        −{dropped} pts fermented<span className="text-[var(--muted)]"> · gravity only drops</span>
       </p>
+    </div>
+  );
+}
+
+function GravityRow({ label, value, pct, color }: { label: string; value: string; pct: number; color: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-mono text-[11px] w-6 shrink-0 text-[var(--ink-soft)]">{label}</span>
+      <div className="flex-1 h-2.5 rounded-full bg-[var(--card-2)] border border-[var(--line)] overflow-hidden">
+        <div className="h-full rounded-full" style={{ width: `${Math.max(2, pct)}%`, background: color }} />
+      </div>
+      <span className="font-mono text-[11px] w-16 shrink-0 text-right text-[var(--ink)]">{value}</span>
     </div>
   );
 }
