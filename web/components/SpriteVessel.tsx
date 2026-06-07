@@ -204,6 +204,10 @@ export function SpriteVessel({ vessel, honeyType, juiceType, juiceL, liters, pha
     const intX = fillMeta.x;
     const intW = fillMeta.w;
     const intY1 = fillMeta.bottom;
+    // The vessel's true base for the ground shadow. Kept distinct from the
+    // liquid floor (intY1) because an opaque bucket's floor sits above its
+    // flared foot — the shadow belongs at the foot, not at the liquid line.
+    const baseY = meta.interior.y + meta.interior.h;
     const fillRange = fillMeta.bottom - fillMeta.top;
     const liquidH = Math.round(fill * fillRange);
     const liquidTop = intY1 - liquidH;
@@ -296,7 +300,7 @@ export function SpriteVessel({ vessel, honeyType, juiceType, juiceL, liters, pha
     const sx = still.getContext("2d")!;
     sx.imageSmoothingEnabled = true;
     // clean neutral ground shadow (the source art's baked shadow was removed)
-    drawGroundShadow(sx, intX + intW / 2, intY1, intW);
+    drawGroundShadow(sx, intX + intW / 2, baseY, intW);
     sx.drawImage(base, 0, 0);
     sx.globalCompositeOperation = "multiply";
     sx.drawImage(sprite, 0, 0);
