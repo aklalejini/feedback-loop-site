@@ -6,8 +6,9 @@ import { MeadForm } from "@/components/MeadForm";
 import { SpriteVessel } from "@/components/SpriteVessel";
 import { Timeline } from "@/components/Timeline";
 import { events } from "@/lib/analytics";
+import { buildSampleMead, SAMPLES, type SampleSpec } from "@/lib/samples";
 import { loadMeads, upsertMead } from "@/lib/storage";
-import { HONEYS, project, sampleMead, VESSELS, type Mead } from "@/lib/mead";
+import { HONEYS, project, VESSELS, type Mead } from "@/lib/mead";
 
 export default function HomePage() {
   const router = useRouter();
@@ -29,10 +30,10 @@ export default function HomePage() {
     });
   }
 
-  function loadSample() {
-    const sample = sampleMead();
+  function loadSample(spec: SampleSpec) {
+    const sample = buildSampleMead(spec);
     upsertMead(sample);
-    events.sampleLoaded();
+    events.sampleLoaded(spec.kind);
     router.push(`/mead/${sample.id}`);
   }
 
@@ -62,24 +63,40 @@ export default function HomePage() {
         ) : null}
 
         {meads.length === 0 && !creating ? (
-          <div className="pixel-card p-8 sm:p-10 grid gap-4 text-center">
-            <p className="text-[var(--muted)]">
-              No batches yet. Design your first by clicking{" "}
-              <strong className="text-[var(--ink)]">New batch</strong>,
-              or try a sample to see how the planner works.
-            </p>
-            <div>
-              <button
-                type="button"
-                onClick={loadSample}
-                className="btn-ghost px-4 py-2 text-sm"
-              >
-                Try a sample batch →
-              </button>
+          <div className="pixel-card p-6 sm:p-8 grid gap-4">
+            <div className="text-center grid gap-1">
+              <p className="text-[var(--ink-soft)]">
+                No batches yet. Design your own with{" "}
+                <strong className="text-[var(--ink)]">New batch</strong>,
+                or load a sample below to see how the planner works.
+              </p>
+              <p className="text-xs text-[var(--muted)]">
+                Each sample is a clearly-labeled starting recipe — pick by what you want it to taste like.
+                You can delete or edit it anytime.
+              </p>
             </div>
-            <p className="text-xs text-[var(--muted)]">
-              A clearly-labeled example you can delete anytime.
-            </p>
+            <ul className="grid sm:grid-cols-2 gap-3">
+              {SAMPLES.map((spec) => (
+                <li key={spec.kind}>
+                  <button
+                    type="button"
+                    onClick={() => loadSample(spec)}
+                    className="opt w-full p-3 grid gap-1 text-left"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span
+                        aria-hidden
+                        className="inline-block h-3 w-3 rounded-sm border border-[var(--ink)]"
+                        style={{ background: spec.swatchColor }}
+                      />
+                      <span className="font-display text-lg leading-tight">{spec.label}</span>
+                    </span>
+                    <span className="text-sm text-[var(--ink-soft)] leading-snug">{spec.endProduct}</span>
+                    <span className="text-xs text-[var(--muted)] font-mono">{spec.takeaway}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         ) : null}
 

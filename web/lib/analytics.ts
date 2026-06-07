@@ -21,6 +21,6 @@ export const events = {
     track("observation_logged", props),
   batchViewed: (props: { phase: string; age_days: number }) =>
     track("batch_viewed", props),
-  sampleLoaded: () => track("sample_loaded"),
+  sampleLoaded: (kind?: string) => track("sample_loaded", kind ? { kind } : undefined),
   nutrientAdded: () => track("nutrient_added"),
 };

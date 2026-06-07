@@ -6,8 +6,6 @@ import {
   gravitySource,
   potentialAbvToDry,
   project,
-  sampleMead,
-  SAMPLE_MEAD_NAME_PREFIX,
   startingGravity,
   YEASTS,
   type Mead,
@@ -104,32 +102,7 @@ describe("YEAST table", () => {
   });
 });
 
-describe("sampleMead", () => {
-  it("is identifiable as a sample via the name prefix", () => {
-    expect(sampleMead().name.startsWith(SAMPLE_MEAD_NAME_PREFIX)).toBe(true);
-  });
-
-  it("lands in primary or secondary on first view (backdated ~21 days)", () => {
-    const now = new Date("2026-06-06T00:00:00.000Z");
-    const s = sampleMead(now);
-    const p = project(s, now);
-    expect(["primary", "secondary"]).toContain(p.currentPhase);
-  });
-
-  it("contains one example observation so the timeline re-projects", () => {
-    expect(sampleMead().observations.length).toBe(1);
-  });
-
-  it("each call yields a fresh id (so multiple loads don't collide)", () => {
-    expect(sampleMead().id).not.toBe(sampleMead().id);
-  });
-
-  it("produces a realistic mead with ABV in the hobbyist band", () => {
-    const p = project(sampleMead());
-    expect(p.estABV).toBeGreaterThan(8);
-    expect(p.estABV).toBeLessThan(18);
-  });
-});
+// Sample-batch behavior moved to __tests__/samples.test.ts (new module).
 
 describe("fermentationRisks", () => {
   it("flags yeast tolerance when potential ABV exceeds it", () => {
