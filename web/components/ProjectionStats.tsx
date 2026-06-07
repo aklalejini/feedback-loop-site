@@ -49,25 +49,31 @@ function StatCard({ tag, label, value }: { tag: string; label: string; value: Re
   );
 }
 
-// A tiny sparkline: OG (left, high) sloping down to FG (right, low), normalised
-// so the drop is always visible, with the gravity points dropped called out.
+// A clean, monotonic gravity chart: a single straight descent from OG (high,
+// left) to FG (low, right) with labeled endpoints — gravity only ever drops, so
+// a straight line can't imply a rise. Endpoints are dotted + labeled; the points
+// dropped are called out.
 function GravityBar({ og, fg }: { og: number; fg: number }) {
   const points = Math.max(0, Math.round((og - fg) * 1000));
-  const W = 240, H = 40, x0 = 6, x1 = W - 6, yTop = 8, yBot = H - 8;
-  const cx = (x0 + x1) / 2;
-  const line = `M ${x0} ${yTop} C ${cx} ${yTop}, ${cx} ${yBot}, ${x1} ${yBot}`;
-  const area = `${line} L ${x1} ${H} L ${x0} ${H} Z`;
+  const W = 240, H = 48, x0 = 12, x1 = W - 12, yTop = 12, yBot = H - 14;
+  const line = `M ${x0} ${yTop} L ${x1} ${yBot}`;
+  const area = `${line} L ${x1} ${H - 2} L ${x0} ${H - 2} Z`;
   return (
     <div className="grid gap-1">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-9" preserveAspectRatio="none" aria-hidden>
-        <path d={area} fill="var(--accent)" opacity="0.12" />
-        <path d={line} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
-        <circle cx={x0} cy={yTop} r="3.5" fill="var(--accent)" />
-        <circle cx={x1} cy={yBot} r="3.5" fill="var(--accent-deep)" />
-      </svg>
-      <p className="text-xs text-[var(--muted)] font-mono">
-        {og.toFixed(3)} <span aria-hidden>→</span> {fg.toFixed(3)}
-        <span className="text-[var(--ink-soft)]"> · −{points} pts</span>
+      <div className="flex items-stretch gap-2">
+        <span className="font-mono text-[11px] text-[var(--ink-soft)] self-start leading-none pt-1">OG</span>
+        <svg viewBox={`0 0 ${W} ${H}`} className="flex-1 h-12" preserveAspectRatio="none" aria-hidden>
+          <line x1={x0} y1={H - 2} x2={x1} y2={H - 2} stroke="var(--line)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          <path d={area} fill="var(--accent)" opacity="0.12" />
+          <path d={line} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          <circle cx={x0} cy={yTop} r="4" fill="var(--accent)" />
+          <circle cx={x1} cy={yBot} r="4" fill="var(--accent-deep)" />
+        </svg>
+        <span className="font-mono text-[11px] text-[var(--ink-soft)] self-end leading-none pb-1">FG</span>
+      </div>
+      <p className="text-xs text-[var(--ink-soft)] font-mono">
+        {og.toFixed(3)} <span aria-hidden>↓</span> {fg.toFixed(3)}
+        <span className="text-[var(--muted)]"> · −{points} pts</span>
       </p>
     </div>
   );
