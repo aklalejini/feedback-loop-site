@@ -97,8 +97,8 @@ export function Torchlight() {
         const t = torches[i];
         t.cx = (offX + s.cx * scale) / PIX;   // buffer coords
         t.yBase = (s.yCup * scale) / PIX;
-        t.H = (s.hPaint * scale * 1.08) / PIX;
-        t.W = (22 * scale) / PIX;
+        t.H = (s.hPaint * scale * 0.82) / PIX; // shorter, calmer flame
+        t.W = (18 * scale) / PIX;
       }
     }
 
@@ -137,9 +137,9 @@ export function Torchlight() {
 
     function drawHalo(cx: number, cy: number, r: number, alpha: number) {
       const g = bctx!.createRadialGradient(cx, cy - 2, 1, cx, cy, r);
-      g.addColorStop(0, `rgba(255, 220, 140, ${0.32 * alpha})`);
-      g.addColorStop(0.32, `rgba(255, 150, 60, ${0.17 * alpha})`);
-      g.addColorStop(0.7, `rgba(255, 110, 30, ${0.05 * alpha})`);
+      g.addColorStop(0, `rgba(255, 220, 140, ${0.24 * alpha})`);
+      g.addColorStop(0.32, `rgba(255, 150, 60, ${0.12 * alpha})`);
+      g.addColorStop(0.7, `rgba(255, 110, 30, ${0.035 * alpha})`);
       g.addColorStop(1, "rgba(255, 100, 30, 0)");
       bctx!.fillStyle = g;
       bctx!.fillRect(cx - r, cy - r, r * 2, r * 2);
@@ -148,35 +148,35 @@ export function Torchlight() {
     function drawFlame(t: TorchState, time: number) {
       const cx = t.cx, yBase = t.yBase;
       const breath = 1 + Math.sin(time * 1.7 + t.seed) * 0.06;
-      drawHalo(cx, yBase - t.H * 0.4, t.H * 2.6, breath);
+      drawHalo(cx, yBase - t.H * 0.35, t.H * 2.2, breath);
 
       bctx!.save();
       bctx!.globalCompositeOperation = "lighter";
       // outer dim red
       flameLayer(
         cx + Math.sin(time * 2.6 + t.seed) * (3 / PIX), yBase,
-        t.W * 1.6, t.H * 1.12 * (0.94 + Math.sin(time * 2.1 + t.seed * 1.3) * 0.09),
-        "rgba(150, 36, 8, 0.6)", 7 / PIX, time, t.seed * 1.1,
+        t.W * 1.55, t.H * 1.12 * (0.94 + Math.sin(time * 2.1 + t.seed * 1.3) * 0.09),
+        "rgba(150, 36, 8, 0.5)", 6 / PIX, time, t.seed * 1.1,
       );
       // orange body
       flameLayer(
         cx + Math.sin(time * 4.4 + t.seed * 2.1) * (2.4 / PIX), yBase - 2 / PIX,
         t.W * 1.0, t.H * (0.92 + Math.sin(time * 3.7 + t.seed) * 0.12),
-        "rgba(232, 110, 26, 0.9)", 5.5 / PIX, time, t.seed * 1.7,
+        "rgba(232, 110, 26, 0.8)", 5 / PIX, time, t.seed * 1.7,
       );
       // yellow inner
       flameLayer(
         cx + Math.sin(time * 6.0 + t.seed * 3.3) * (1.6 / PIX), yBase - 4 / PIX,
-        t.W * 0.6, t.H * (0.74 + Math.sin(time * 5.2 + t.seed * 2.1) * 0.14),
-        "rgba(255, 206, 96, 0.95)", 4 / PIX, time, t.seed * 2.5,
+        t.W * 0.58, t.H * (0.72 + Math.sin(time * 5.2 + t.seed * 2.1) * 0.14),
+        "rgba(255, 206, 96, 0.86)", 3.6 / PIX, time, t.seed * 2.5,
       );
       // white-hot core (intermittent, dances most)
       const tip = Math.sin(time * 4 + t.seed) * 0.5 + 0.5;
-      if (tip > 0.15) {
+      if (tip > 0.2) {
         flameLayer(
           cx + Math.sin(time * 8 + t.seed) * (1.4 / PIX), yBase - 6 / PIX,
-          t.W * 0.34, t.H * (0.5 + tip * 0.22),
-          `rgba(255, 250, 210, ${0.55 + tip * 0.35})`, 2.6 / PIX, time, t.seed * 3.6,
+          t.W * 0.32, t.H * (0.46 + tip * 0.2),
+          `rgba(255, 250, 210, ${0.42 + tip * 0.28})`, 2.4 / PIX, time, t.seed * 3.6,
         );
       }
       bctx!.restore();
@@ -189,19 +189,19 @@ export function Torchlight() {
       t.embers.push({
         x: cxScreen + (Math.random() - 0.5) * wScreen * 0.9,
         y: yTopScreen + (Math.random() - 0.5) * 6,
-        vx: (Math.random() - 0.5) * 16,
-        vy: -34 - Math.random() * 42,
+        vx: (Math.random() - 0.5) * 14,
+        vy: -28 - Math.random() * 34,
         age: 0,
-        life: 1.8 + Math.random() * 1.8,
+        life: 1.5 + Math.random() * 1.5,
         size: Math.random() < 0.3 ? 2 : 1,
         black: Math.random() < 0.2,
       });
     }
 
     function drawEmbers(t: TorchState, dt: number) {
-      // spawn (≈8–14 / sec)
+      // spawn (≈6–9 / sec)
       t.emit += dt;
-      const interval = 0.08 + Math.random() * 0.06;
+      const interval = 0.11 + Math.random() * 0.07;
       while (t.emit >= interval) { spawnEmber(t); t.emit -= interval; }
 
       for (let i = t.embers.length - 1; i >= 0; i--) {
