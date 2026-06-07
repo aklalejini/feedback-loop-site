@@ -46,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body>
         <Analytics />
+        <div className="page-bg" aria-hidden />
         <Torchlight />
         <main className="max-w-5xl mx-auto px-5 py-9">
           <header className="mb-9">
