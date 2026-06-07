@@ -33,14 +33,23 @@ html, body {
   font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Torchlit stone hall: the dungeon photo fixed behind everything, with a soft
-   dark scrim to deepen it and keep light text legible over the brickwork. */
 body {
   background-color: var(--bg);
-  background-image:
+}
+
+/* Torchlit stone hall. The dungeon is a position:fixed ELEMENT (not a fixed CSS
+   background) so it shares the exact same positioning behaviour as the fire
+   canvas — including during trackpad overscroll / rubber-band — and the flames
+   never decouple from the painted torches. A soft dark scrim deepens it and
+   keeps light text legible over the brickwork. */
+.page-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
     linear-gradient(rgba(12, 9, 5, 0.34), rgba(12, 9, 5, 0.32)),
     url("/bg-dungeon.png");
-  background-attachment: fixed, fixed;
   background-position: center top, center top;
   background-size: cover, cover;
   background-repeat: no-repeat, no-repeat;
