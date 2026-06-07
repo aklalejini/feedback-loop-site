@@ -1,22 +1,34 @@
 import type { Metadata } from "next";
-import { Fraunces, Mulish } from "next/font/google";
+import { Fraunces, Source_Serif_4, Pirata_One } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { UnitsToggle } from "@/components/UnitsToggle";
 import { Torchlight } from "@/components/Torchlight";
 import "./globals.css";
 
+// Display: Fraunces with its "old style" soft optical axes for an aged,
+// handmade-yet-readable headline voice.
 const display = Fraunces({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  axes: ["SOFT", "WONK", "opsz"],
   style: ["normal", "italic"],
   variable: "--font-display",
   display: "swap",
 });
 
-const body = Mulish({
+// Body: Source Serif 4 — warm, open, very legible on dark for dense data.
+const body = Source_Serif_4({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
   variable: "--font-body",
+  display: "swap",
+});
+
+// Wordmark only: a single word of blackletter for the logo — old-world signal
+// with no readability cost since it never touches headers or body.
+const wordmark = Pirata_One({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-wordmark",
   display: "swap",
 });
 
@@ -43,7 +55,7 @@ function DropMark() {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html lang="en" className={`${display.variable} ${body.variable} ${wordmark.variable}`}>
       <body>
         <Analytics />
         <div className="page-bg" aria-hidden />
@@ -53,7 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="flex items-center justify-between gap-4">
               <a href="/" className="inline-flex items-center gap-2.5 no-underline text-[var(--ink)]">
                 <DropMark />
-                <span className="font-display text-2xl font-semibold tracking-tight">Mead Planner</span>
+                <span className="wordmark text-[26px] leading-none">Mead Planner</span>
               </a>
               <nav className="flex items-center gap-3 text-sm">
                 <a href="/yeast" className="no-underline text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
