@@ -23,7 +23,8 @@
     "top": 191,
     "bottom": 425,
     "x": 158,
-    "w": 164
+    "w": 164,
+    "ellipse": 0.18
   },
   "artAirlock": true,
   "solid": false
