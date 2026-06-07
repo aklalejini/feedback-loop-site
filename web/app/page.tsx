@@ -8,7 +8,7 @@ import { Timeline } from "@/components/Timeline";
 import { events } from "@/lib/analytics";
 import { buildSampleMead, SAMPLES, type SampleSpec } from "@/lib/samples";
 import { loadMeads, upsertMead } from "@/lib/storage";
-import { HONEYS, project, VESSELS, type Mead } from "@/lib/mead";
+import { HONEYS, project, VESSELS, type Mead, type PhaseName } from "@/lib/mead";
 
 export default function HomePage() {
   const router = useRouter();
@@ -102,51 +102,53 @@ export default function HomePage() {
 
         {meads.length > 0 ? (
           <ul className="grid gap-3">
-            {meads.map((m) => {
-              const proj = project(m);
-              const ageDays = Math.floor(
-                (Date.now() - new Date(m.createdAt).getTime()) / 86400000,
-              );
-              return (
-                <li
-                  key={m.id}
-                  className="pixel-card p-4 transition-transform hover:-translate-y-0.5"
-                >
-                  <Link
-                    href={`/mead/${m.id}`}
-                    className="grid sm:grid-cols-[64px,minmax(0,220px),minmax(0,1fr)] gap-4 sm:gap-6 items-center no-underline text-[var(--ink)]"
-                  >
-                    <SpriteVessel
-                      vessel={m.vessel}
-                      honeyType={m.honeyType}
-                      liters={m.waterL + (m.juiceL ?? 0) + m.honeyKg * 0.7}
-                      phase={proj.currentPhase}
-                      size={64}
-                      animated={false}
-                    />
-                    <div className="grid gap-0.5 min-w-0">
-                      <h3 className="font-display text-xl leading-tight truncate">{m.name}</h3>
-                      <p className="text-xs text-[var(--muted)] truncate">
-                        {HONEYS[m.honeyType].label} · {VESSELS[m.vessel].label} · {m.yeast}
-                      </p>
-                      <p className="text-xs mt-1">
-                        <strong className="capitalize">{proj.currentPhase}</strong>
-                        <span className="text-[var(--muted)]"> · </span>
-                        {proj.estABV.toFixed(1)}% ABV
-                        <span className="text-[var(--muted)]"> · </span>
-                        {ageDays}d in
-                      </p>
-                    </div>
-                    <div className="min-w-0">
-                      <Timeline projection={proj} />
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
+            {meads.map((m) => (
+              <BatchRow key={m.id} mead={m} />
+            ))}
           </ul>
         ) : null}
       </section>
     </div>
+  );
+}
+
+// One batch in the list. Hovering (or focusing) a timeline phase previews that
+// phase's animation on the (now larger) vessel; the vessel and timeline live
+// side by side as siblings so the timeline's hover targets aren't nested inside
+// the navigating link.
+function BatchRow({ mead: m }: { mead: Mead }) {
+  const [hoverPhase, setHoverPhase] = useState<PhaseName | null>(null);
+  const proj = project(m);
+  const ageDays = Math.floor((Date.now() - new Date(m.createdAt).getTime()) / 86400000);
+  const displayPhase = hoverPhase ?? proj.currentPhase;
+  return (
+    <li className="pixel-card p-4 grid sm:grid-cols-[124px,minmax(0,200px),minmax(0,1fr)] gap-4 sm:gap-6 items-center transition-transform hover:-translate-y-0.5">
+      <Link href={`/mead/${m.id}`} className="block mx-auto sm:mx-0" aria-label={`Open ${m.name}`}>
+        <SpriteVessel
+          vessel={m.vessel}
+          honeyType={m.honeyType}
+          liters={m.waterL + (m.juiceL ?? 0) + m.honeyKg * 0.7}
+          phase={displayPhase}
+          size={120}
+          animated
+        />
+      </Link>
+      <Link href={`/mead/${m.id}`} className="grid gap-0.5 min-w-0 no-underline text-[var(--ink)]">
+        <h3 className="font-display text-xl leading-tight truncate">{m.name}</h3>
+        <p className="text-xs text-[var(--muted)] truncate">
+          {HONEYS[m.honeyType].label} · {VESSELS[m.vessel].label} · {m.yeast}
+        </p>
+        <p className="text-xs mt-1">
+          <strong className="capitalize">{proj.currentPhase}</strong>
+          <span className="text-[var(--muted)]"> · </span>
+          {proj.estABV.toFixed(1)}% ABV
+          <span className="text-[var(--muted)]"> · </span>
+          {ageDays}d in
+        </p>
+      </Link>
+      <div className="min-w-0">
+        <Timeline projection={proj} selectedPhase={hoverPhase} onHoverPhase={setHoverPhase} />
+      </div>
+    </li>
   );
 }
