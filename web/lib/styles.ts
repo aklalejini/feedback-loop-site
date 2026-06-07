@@ -9,13 +9,18 @@ import type { HoneyType, JuiceKind, YeastStrain } from "./mead";
 
 export type StyleKind =
   | "traditional"
+  | "show_mead"
   | "sack"
   | "hydromel"
   | "cyser"
   | "pyment"
   | "melomel"
   | "metheglin"
+  | "capsicumel"
   | "bochet"
+  | "acerglyn"
+  | "bilbemel"
+  | "black_mead"
   | "custom";
 
 export interface StyleProfile {
@@ -143,6 +148,79 @@ export const STYLE_PROFILES: Record<StyleKind, StyleProfile> = {
     defaultSweetness: 2,
     spices: [],
   },
+  // Clean, dry traditional — "show mead" is the BJCP/competition name for a
+  // neutral mead built to display honey character without distraction.
+  show_mead: {
+    kind: "show_mead",
+    label: "Show mead",
+    description: "Dry, clean, clear — built to show off the honey, BJCP-style.",
+    defaultOG: 1.080,
+    ogRange: [1.070, 1.100],
+    juiceFraction: 0,
+    juiceType: null,
+    honeyType: "clover",
+    yeast: "EC-1118",
+    defaultSweetness: 0, // Dry
+    spices: [],
+  },
+  // Chile-pepper metheglin — pre-selects warm spices + a chile so the heat is
+  // there from the start. Maker can swap habanero for cayenne, add more spice.
+  capsicumel: {
+    kind: "capsicumel",
+    label: "Capsicumel",
+    description: "Chile-pepper mead — sweet heat. Habanero + warm spices.",
+    defaultOG: 1.095,
+    ogRange: [1.080, 1.120],
+    juiceFraction: 0,
+    juiceType: null,
+    yeast: "D-47",
+    defaultSweetness: 2,
+    spices: ["habanero", "orange peel"],
+  },
+  // Maple-syrup mead — uses the maple "honey" entry, which has its own lower
+  // PPG (maple is ~66% sugar by weight vs honey's ~80%). Acerglyn drinks
+  // warmer and rounder than a traditional thanks to maple's caramel notes.
+  acerglyn: {
+    kind: "acerglyn",
+    label: "Acerglyn",
+    description: "Maple-syrup mead — caramel, toffee, woodland sweetness.",
+    defaultOG: 1.100,
+    ogRange: [1.080, 1.120],
+    juiceFraction: 0,
+    juiceType: null,
+    honeyType: "maple",
+    yeast: "71B-1122",
+    defaultSweetness: 2,
+    spices: [],
+  },
+  // Blueberry melomel — uses the new blueberry juice; 71B softens the acid.
+  bilbemel: {
+    kind: "bilbemel",
+    label: "Bilbemel",
+    description: "Blueberry mead — deep purple, mellow fruit (Norwegian tradition).",
+    defaultOG: 1.085,
+    ogRange: [1.075, 1.110],
+    juiceFraction: 0.30,
+    juiceType: "blueberry",
+    yeast: "71B-1122",
+    defaultSweetness: 2,
+    spices: [],
+  },
+  // Blackcurrant melomel — historically "black mead" in the British tradition;
+  // the deep cassis colour and tart fruit pair with a heavier honey.
+  black_mead: {
+    kind: "black_mead",
+    label: "Black mead",
+    description: "Blackcurrant mead — tart, jammy, intense colour.",
+    defaultOG: 1.095,
+    ogRange: [1.080, 1.120],
+    juiceFraction: 0.30,
+    juiceType: "blackcurrant",
+    honeyType: "buckwheat",
+    yeast: "71B-1122",
+    defaultSweetness: 2,
+    spices: [],
+  },
   custom: {
     kind: "custom",
     label: "Custom",
@@ -157,7 +235,12 @@ export const STYLE_PROFILES: Record<StyleKind, StyleProfile> = {
   },
 };
 
-// Style order shown in the picker; "custom" anchors the end.
+// Style order shown in the picker; grouped by family (clean → high-grav → fruit
+// → spiced → variants), "custom" anchors the end.
 export const STYLE_ORDER: StyleKind[] = [
-  "traditional", "sack", "hydromel", "cyser", "pyment", "melomel", "metheglin", "bochet", "custom",
+  "traditional", "show_mead", "sack", "hydromel",
+  "cyser", "pyment", "melomel", "bilbemel", "black_mead",
+  "metheglin", "capsicumel",
+  "bochet", "acerglyn",
+  "custom",
 ];

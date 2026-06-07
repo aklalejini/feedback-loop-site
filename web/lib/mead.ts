@@ -1,7 +1,7 @@
 // Domain types + fermentation projection for the mead planner.
 // Kept simple and testable; the loop will refine the model over time.
 
-export type HoneyType = "clover" | "wildflower" | "orange_blossom" | "buckwheat" | "raw";
+export type HoneyType = "clover" | "wildflower" | "orange_blossom" | "buckwheat" | "raw" | "maple";
 export type YeastStrain = "EC-1118" | "D-47" | "K1-V1116" | "71B-1122" | "Wyeast-4632" | "Bread";
 export type VesselKind = "jar-1gal" | "jug-1gal" | "jug-5gal" | "bucket-5gal";
 export type PhaseName = "lag" | "primary" | "secondary" | "conditioning" | "done";
@@ -10,7 +10,7 @@ export type NitrogenNeed = "low" | "medium" | "high";
 // Common juices for melomels. Brix sourced from typical food-composition values;
 // these are estimates — measured OG always wins for accuracy (docs/research:
 // "Prefer Measured OG"). Values reflect 100% unsweetened juice.
-export type JuiceKind = "apple" | "grape" | "tart_cherry" | "pomegranate" | "orange";
+export type JuiceKind = "apple" | "grape" | "tart_cherry" | "pomegranate" | "orange" | "blueberry" | "blackcurrant";
 
 export interface JuiceInfo {
   kind: JuiceKind;
@@ -26,6 +26,8 @@ export const JUICES: Record<JuiceKind, JuiceInfo> = {
   tart_cherry:  { kind: "tart_cherry",  label: "Tart cherry",  color: "#a92a3b", typicalBrix: 14.0, note: "Bright acid, deep color." },
   pomegranate:  { kind: "pomegranate",  label: "Pomegranate",  color: "#8a1d2a", typicalBrix: 15.0, note: "Pucker + colour; pair with lower honey." },
   orange:       { kind: "orange",       label: "Orange",       color: "#e08f24", typicalBrix: 11.0, note: "Bright citrus; lower sugar." },
+  blueberry:    { kind: "blueberry",    label: "Blueberry",    color: "#3b2a78", typicalBrix: 14.0, note: "Deep purple, mellow fruit — base for bilbemel." },
+  blackcurrant: { kind: "blackcurrant", label: "Blackcurrant", color: "#321b3a", typicalBrix: 15.0, note: "Tart, jammy, intense colour — the black mead juice." },
 };
 
 export interface YeastInfo {
@@ -53,6 +55,10 @@ export interface HoneyInfo {
   color: string; // hex
   label: string;
   note: string;
+  // Optional override for sugar contribution per kg per L of must. Defaults to
+  // HONEY_GRAVITY_PER_KG_PER_L when undefined. Useful for sweeteners that
+  // aren't honey-density (e.g. maple syrup is ~66% sugar vs honey's ~80%).
+  gravityPerKgPerL?: number;
 }
 
 export const HONEYS: Record<HoneyType, HoneyInfo> = {
@@ -61,6 +67,9 @@ export const HONEYS: Record<HoneyType, HoneyInfo> = {
   orange_blossom: { type: "orange_blossom", color: "#e8b04c", label: "Orange Blossom", note: "Floral, citrus notes." },
   buckwheat:      { type: "buckwheat",      color: "#5a3a1a", label: "Buckwheat",      note: "Dark, malty." },
   raw:            { type: "raw",            color: "#e9c763", label: "Raw (mixed)",    note: "Unfiltered, cloudy." },
+  // Maple syrup is ~66% sugar by weight vs honey's ~80%, so it contributes
+  // proportionally less gravity per kg. Used for acerglyn (maple mead).
+  maple:          { type: "maple",          color: "#a85f1a", label: "Maple syrup",    note: "For acerglyn — toffee + caramel.", gravityPerKgPerL: 0.319 * 0.66 / 0.80 },
 };
 
 export interface VesselInfo {
@@ -152,13 +161,19 @@ export function mustComposition(input: Pick<Mead, "honeyKg" | "waterL" | "juiceL
   return { honeyL, juiceL, waterL, totalL: honeyL + juiceL + waterL };
 }
 
-type GravityInput = Pick<Mead, "honeyKg" | "waterL" | "juiceL" | "juiceType"> & { measuredOG?: number };
+type GravityInput =
+  Pick<Mead, "honeyKg" | "waterL" | "juiceL" | "juiceType"> &
+  { measuredOG?: number; honeyType?: HoneyType };
 
 export function startingGravity(input: GravityInput): number {
   if (typeof input.measuredOG === "number" && input.measuredOG > 0) return input.measuredOG;
   const { totalL } = mustComposition(input);
   if (totalL <= 0) return 1.0;
-  const honeyPoints = Math.max(0, input.honeyKg ?? 0) * HONEY_GRAVITY_PER_KG_PER_L;
+  // Per-honey PPG override (e.g. maple syrup has lower sugar density). When the
+  // caller doesn't tell us the honey type we fall back to the default constant,
+  // which matches every honey except maple to within rounding.
+  const ppg = input.honeyType ? (HONEYS[input.honeyType].gravityPerKgPerL ?? HONEY_GRAVITY_PER_KG_PER_L) : HONEY_GRAVITY_PER_KG_PER_L;
+  const honeyPoints = Math.max(0, input.honeyKg ?? 0) * ppg;
   // Juice contributes sugar = juiceL × (typicalBrix × SG/°Bx). Volume already
   // counted in totalL above. This is a recipe estimate; juice composition
   // varies, so measured OG should override (per docs/research).

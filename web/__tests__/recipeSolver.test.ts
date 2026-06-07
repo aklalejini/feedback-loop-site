@@ -125,6 +125,57 @@ describe("solveRecipe — volume budgeting", () => {
   });
 });
 
+describe("solveRecipe — new presets", () => {
+  it("show mead defaults to clover honey + EC-1118 + a dry target", () => {
+    const s = solveRecipe({ vesselCapacityL: VESSEL_1GAL, style: "show_mead" });
+    expect(s.yeast).toBe("EC-1118");
+    expect(s.targetSweetness).toBe(0);
+    expect(s.juiceL).toBe(0);
+  });
+
+  it("acerglyn uses maple (lower PPG → needs more 'honey' for same OG)", () => {
+    const acer = solveRecipe({ vesselCapacityL: VESSEL_1GAL, style: "acerglyn" });
+    const trad = solveRecipe({ vesselCapacityL: VESSEL_1GAL, style: "traditional" });
+    // Maple's gravityPerKgPerL is ~83% of honey's, so to hit a similar OG you
+    // need ~20% more weight. The solver should reflect that automatically.
+    expect(acer.honeyKg).toBeGreaterThan(trad.honeyKg);
+  });
+
+  it("bilbemel pins blueberry juice", () => {
+    const s = solveRecipe({ vesselCapacityL: VESSEL_1GAL, style: "bilbemel" });
+    expect(s.juiceType).toBe("blueberry");
+    expect(s.juiceL).toBeGreaterThan(0);
+  });
+
+  it("black mead pins blackcurrant juice", () => {
+    const s = solveRecipe({ vesselCapacityL: VESSEL_1GAL, style: "black_mead" });
+    expect(s.juiceType).toBe("blackcurrant");
+    expect(s.juiceL).toBeGreaterThan(0);
+  });
+});
+
+describe("startingGravity — per-honey PPG override (maple)", () => {
+  it("identical recipe with maple projects a lower OG than with honey", () => {
+    // Same honeyKg, same waterL, no juice — maple's lower sugar density should
+    // give a lower SG. (This is what makes acerglyn need more weight to hit a
+    // given OG target.)
+    const m = { honeyKg: 1.4, waterL: 3.0 } as const;
+    const honeyOG = startingGravity({ ...m, honeyType: "clover" });
+    const mapleOG = startingGravity({ ...m, honeyType: "maple" });
+    expect(mapleOG).toBeLessThan(honeyOG);
+    // Specifically, maple's PPG is ~83% of honey's, so the (OG-1) ratio is too.
+    const ratio = (mapleOG - 1) / (honeyOG - 1);
+    expect(ratio).toBeGreaterThan(0.78);
+    expect(ratio).toBeLessThan(0.86);
+  });
+
+  it("default behavior (no honeyType passed) uses the honey constant", () => {
+    const a = startingGravity({ honeyKg: 1.4, waterL: 3.0 });
+    const b = startingGravity({ honeyKg: 1.4, waterL: 3.0, honeyType: "clover" });
+    expect(a).toBeCloseTo(b, 6);
+  });
+});
+
 // Quick sanity probe of the gravity model so the solver and projection stay
 // in lock-step (catches future refactors to either constant).
 describe("solver/projection consistency", () => {
