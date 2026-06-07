@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   type Mead,
   type HoneyType,
@@ -448,14 +448,40 @@ function CapSlider({
   onChange: (displayVal: number) => void;
 }) {
   const safeMax = Math.max(step, displayMax);
+  // The number field can be typed directly. We keep a local string buffer while
+  // it's focused so capacity push-down (which rewrites displayValue) doesn't
+  // clobber what the user is typing; on blur we resync to the committed value.
+  const [text, setText] = useState(displayValue.toFixed(2));
+  const [editing, setEditing] = useState(false);
+  useEffect(() => {
+    if (!editing) setText(displayValue.toFixed(2));
+  }, [displayValue, editing]);
+  const commit = (raw: string) => {
+    const n = parseFloat(raw);
+    if (Number.isFinite(n)) onChange(Math.max(0, n));
+  };
   return (
     <div className="grid gap-1.5">
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between gap-2">
         <label htmlFor={id} className="eyebrow text-[var(--ink-soft)]">
           {label}
           {displayAtCapacity ? <span className="ml-2 text-[10px] font-semibold text-amber-900">vessel full</span> : null}
         </label>
-        <span className="font-mono text-base tabular-nums">{displayValue.toFixed(2)} {unit}</span>
+        <span className="flex items-baseline gap-1">
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step={step}
+            aria-label={`${label} amount in ${unit}`}
+            className="w-16 bg-transparent text-right font-mono text-base tabular-nums border-b border-[var(--line)] focus:border-[var(--accent)] focus:outline-none"
+            value={text}
+            onFocus={() => setEditing(true)}
+            onChange={(e) => { setText(e.target.value); commit(e.target.value); }}
+            onBlur={() => { setEditing(false); commit(text); }}
+          />
+          <span className="font-mono text-sm text-[var(--muted)]">{unit}</span>
+        </span>
       </div>
       <input
         id={id}
