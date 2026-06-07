@@ -3,7 +3,7 @@
 
 export type HoneyType = "clover" | "wildflower" | "orange_blossom" | "buckwheat" | "raw";
 export type YeastStrain = "EC-1118" | "D-47" | "K1-V1116" | "71B-1122" | "Wyeast-4632" | "Bread";
-export type VesselKind = "jug-1gal" | "jug-5gal" | "bucket-5gal" | "demijohn-3gal";
+export type VesselKind = "jar-1gal" | "bucket-5gal";
 export type PhaseName = "lag" | "primary" | "secondary" | "conditioning" | "done";
 export type NitrogenNeed = "low" | "medium" | "high";
 
@@ -71,10 +71,8 @@ export interface VesselInfo {
 }
 
 export const VESSELS: Record<VesselKind, VesselInfo> = {
-  "jug-1gal":     { kind: "jug-1gal",     capacityL: 3.78, label: "1-gallon jug",     shape: "jug" },
-  "jug-5gal":     { kind: "jug-5gal",     capacityL: 18.9, label: "5-gallon jug",     shape: "jug" },
-  "bucket-5gal":  { kind: "bucket-5gal",  capacityL: 18.9, label: "5-gallon bucket",  shape: "bucket" },
-  "demijohn-3gal":{ kind: "demijohn-3gal",capacityL: 11.4, label: "3-gallon demijohn",shape: "demijohn" },
+  "jar-1gal":    { kind: "jar-1gal",    capacityL: 3.78, label: "1-gallon jar",    shape: "jug" },
+  "bucket-5gal": { kind: "bucket-5gal", capacityL: 18.9, label: "5-gallon bucket", shape: "bucket" },
 };
 
 export interface Observation {
@@ -236,7 +234,7 @@ export function sampleMead(now: Date = new Date()): Mead {
     honeyType: "orange_blossom",
     honeyKg: 1.0,
     waterL: 2.8,
-    vessel: "jug-1gal",
+    vessel: "jar-1gal",
     yeast: "D-47",
     spices: [],
     createdAt: created.toISOString(),
@@ -261,7 +259,7 @@ export function blankMead(name = "Untitled batch"): Mead {
     honeyType: "wildflower",
     honeyKg: 0,
     waterL: 0,
-    vessel: "jug-1gal",
+    vessel: "jar-1gal",
     yeast: "D-47",
     spices: [],
     createdAt: new Date().toISOString(),

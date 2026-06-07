@@ -33,9 +33,12 @@ OUT_DIR = ROOT / "web" / "public" / "vessels"
 MAX_W = 480
 HEADROOM = 60  # transparent rows added above the vessel for the procedural airlock
 
+# `art_airlock`: the source art already includes its own lid + airlock, so the
+#   renderer must NOT draw the procedural cork/airlock (and needs no headroom).
+# `solid`: opaque vessel (bucket) — you can't see in, so no interior/liquid.
 JOBS = [
-    {"src": "1 Gallon Jug Empty.png", "kind": "jug-1gal"},
-    {"src": "5 Gallon Jug Empty.png", "kind": "jug-5gal"},
+    {"src": "1 Gallon Mason Jar Empty.png", "kind": "jar-1gal", "art_airlock": True},
+    {"src": "5 Gallon Bucket Empty.png", "kind": "bucket-5gal", "art_airlock": True, "solid": True},
 ]
 
 
@@ -52,7 +55,9 @@ def detect_bg_color(arr: np.ndarray) -> np.ndarray:
     return samples.mean(axis=0)
 
 
-def process(src_path: Path, kind: str) -> dict:
+def process(src_path: Path, kind: str, *, solid: bool = False,
+            art_airlock: bool = False) -> dict:
+    headroom = 0 if art_airlock else HEADROOM
     im = Image.open(src_path).convert("RGB")
     w0, h0 = im.size
 
@@ -93,37 +98,55 @@ def process(src_path: Path, kind: str) -> dict:
     # Vessel mask = the inverse (solid silhouette: glass walls + cavity + ribs).
     vessel_mask = ~bg_mask
 
+    if solid:
+        # An opaque vessel (bucket) is ~the background colour, so the corner flood
+        # can't separate it. Instead take the region enclosed by the drawn outline:
+        # off-background "structure" pixels, lightly sealed, hole-filled, then the
+        # largest component. The detached drop-shadow falls away as its own blob.
+        structure = binary_closing(dist > 20, np.ones((3, 3), bool), iterations=1)
+        filled = binary_fill_holes(structure)
+        slbl, _ = cc_label(filled)
+        ssz = np.bincount(slbl.ravel())
+        ssz[0] = 0
+        vessel_mask = (slbl == int(ssz.argmax())) if ssz.size > 1 else filled
+
     # Interior cavity = light pixels INSIDE the silhouette. Looser threshold so the
     # glass-tinted interior near the walls is included, not just the bright centre.
-    light = dist < 78
-    interior_candidate = vessel_mask & light
-    # Bridge structural ribs / dividers (e.g. the 5-gallon carboy's bands) so the
-    # cavity reads as ONE region instead of a grid of disconnected cells.
-    closed = binary_closing(interior_candidate, structure=np.ones((3, 3), bool), iterations=8)
-    closed &= vessel_mask
-    interior_labeled, _ = cc_label(closed)
-    sizes = np.bincount(interior_labeled.ravel())
-    sizes[0] = 0  # ignore background label
+    # Opaque vessels (buckets) have no visible interior — skip entirely.
     interior_mask = np.zeros_like(vessel_mask)
-    if sizes.size > 1 and sizes.max() > 0:
-        # largest enclosed region = the cavity; small ones (handle hole) are dropped
-        interior_mask = (interior_labeled == sizes.argmax())
-        interior_mask = binary_fill_holes(interior_mask)
+    if not solid:
+        light = dist < 78
+        interior_candidate = vessel_mask & light
+        # Bridge structural ribs / dividers (e.g. the 5-gallon carboy's bands) so the
+        # cavity reads as ONE region instead of a grid of disconnected cells.
+        closed = binary_closing(interior_candidate, structure=np.ones((3, 3), bool), iterations=8)
+        closed &= vessel_mask
+        interior_labeled, _ = cc_label(closed)
+        sizes = np.bincount(interior_labeled.ravel())
+        sizes[0] = 0  # ignore background label
+        if sizes.size > 1 and sizes.max() > 0:
+            # largest enclosed region = the cavity; small ones (handle hole) are dropped
+            interior_mask = (interior_labeled == sizes.argmax())
+            interior_mask = binary_fill_holes(interior_mask)
 
     # Build RGBA sprite: KEEP the entire glass (tint, highlights, ribs, shading)
     # so it can be composited over the liquid with a multiply blend. Only the
     # exterior background and any enclosed background pockets (e.g. the hole in
     # the jug handle) become transparent. We do NOT carve the interior cavity —
     # carving it was what destroyed the glass art.
-    enclosed_bg = (dist < 38) & vessel_mask  # cream pixels inside the silhouette
-    holes = enclosed_bg & ~binary_dilation(interior_mask, iterations=5)
-    # keep only reasonably-sized holes (the handle loop), drop stray speckle
-    holes_lbl, _ = cc_label(holes)
-    hsizes = np.bincount(holes_lbl.ravel())
-    hsizes[0] = 0
-    keep_holes = np.zeros_like(holes)
-    for lab in np.where(hsizes > 40)[0]:
-        keep_holes |= (holes_lbl == lab)
+    # Carve enclosed background pockets (e.g. the hole in a jug handle) out of the
+    # sprite. NOT for solid vessels — their whole opaque body is bg-coloured and
+    # would be punched out.
+    keep_holes = np.zeros_like(vessel_mask)
+    if not solid:
+        enclosed_bg = (dist < 38) & vessel_mask  # cream pixels inside the silhouette
+        holes = enclosed_bg & ~binary_dilation(interior_mask, iterations=5)
+        # keep only reasonably-sized holes (the handle loop), drop stray speckle
+        holes_lbl, _ = cc_label(holes)
+        hsizes = np.bincount(holes_lbl.ravel())
+        hsizes[0] = 0
+        for lab in np.where(hsizes > 40)[0]:
+            keep_holes |= (holes_lbl == lab)
     alpha = np.where(vessel_mask & ~keep_holes, 255, 0).astype(np.uint8)
     rgba = np.concatenate([arr, alpha[..., None]], axis=2)
 
@@ -193,37 +216,41 @@ def process(src_path: Path, kind: str) -> dict:
     else:
         body_bbox = {"x": ibbox["x"], "w": ibbox["w"]}
 
-    # Pad top with HEADROOM transparent rows so the procedural cork + airlock
+    # Pad top with headroom transparent rows so the procedural cork + airlock
     # have somewhere to live above the imported vessel.
-    rgba_padded = np.zeros((h + HEADROOM, w, 4), dtype=np.uint8)
-    rgba_padded[HEADROOM:, :, :] = rgba
+    rgba_padded = np.zeros((h + headroom, w, 4), dtype=np.uint8)
+    rgba_padded[headroom:, :, :] = rgba
     mask_a = (interior_mask.astype(np.uint8) * 255)
-    mask_padded = np.zeros((h + HEADROOM, w), dtype=np.uint8)
-    mask_padded[HEADROOM:, :] = mask_a
+    mask_padded = np.zeros((h + headroom, w), dtype=np.uint8)
+    mask_padded[headroom:, :] = mask_a
 
     meta = {
         "w": w,
-        "h": h + HEADROOM,
-        "headroom": HEADROOM,
+        "h": h + headroom,
+        "headroom": headroom,
         "bg": [int(bg[0]), int(bg[1]), int(bg[2])],
         "neck": {
             "cx": neck_cx,
-            "y_top": neck_top + HEADROOM,
-            "y_bottom": neck_bottom + HEADROOM,
+            "y_top": neck_top + headroom,
+            "y_bottom": neck_bottom + headroom,
             "width": neck_w,
         },
         "interior": {
             "x": ibbox["x"],
-            "y": ibbox["y"] + HEADROOM,
+            "y": ibbox["y"] + headroom,
             "w": ibbox["w"],
             "h": ibbox["h"],
         },
         "fill": {
-            "top": fill_top + HEADROOM,
-            "bottom": fill_bottom + HEADROOM,
+            "top": fill_top + headroom,
+            "bottom": fill_bottom + headroom,
             "x": body_bbox["x"],
             "w": body_bbox["w"],
         },
+        # the art already includes a lid/airlock → renderer skips the procedural one
+        "artAirlock": bool(art_airlock),
+        # opaque vessel → no liquid drawn (you can't see in)
+        "solid": bool(solid),
     }
 
     sprite_path = OUT_DIR / f"{kind}.png"
@@ -232,7 +259,7 @@ def process(src_path: Path, kind: str) -> dict:
     Image.fromarray(rgba_padded, "RGBA").save(sprite_path, optimize=True)
     # Save mask as RGBA with alpha = mask value, so canvas
     # globalCompositeOperation = 'destination-in' clips properly.
-    mask_rgba = np.zeros((h + HEADROOM, w, 4), dtype=np.uint8)
+    mask_rgba = np.zeros((h + headroom, w, 4), dtype=np.uint8)
     mask_rgba[..., :3] = 255
     mask_rgba[..., 3] = mask_padded
     Image.fromarray(mask_rgba, "RGBA").save(mask_path, optimize=True)
@@ -246,10 +273,12 @@ def main() -> int:
         if not src.exists():
             print(f"  skip {job['kind']} (no source: {src.name})")
             continue
-        meta = process(src, job["kind"])
-        print(f"  {job['kind']:14}  {meta['w']}x{meta['h']}  "
-              f"neck cx={meta['neck']['cx']} w={meta['neck']['width']}  "
-              f"y_top={meta['neck']['y_top']} y_bottom={meta['neck']['y_bottom']}")
+        meta = process(src, job["kind"],
+                       solid=job.get("solid", False),
+                       art_airlock=job.get("art_airlock", False))
+        print(f"  {job['kind']:14}  {meta['w']}x{meta['h']}  solid={meta['solid']} "
+              f"artAirlock={meta['artAirlock']}  interior h={meta['interior']['h']} "
+              f"fill {meta['fill']['top']}-{meta['fill']['bottom']}")
     return 0
 
 
