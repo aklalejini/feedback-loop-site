@@ -5,4 +5,4 @@ export const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://feedback-loop-site.vercel.app"
 ).replace(/\/$/, "");
 
-export const SITE_NAME = "Mead Planner";
+export const SITE_NAME = "Mead Book";
