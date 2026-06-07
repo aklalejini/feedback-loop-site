@@ -15,7 +15,6 @@ import {
   startingGravity,
   blankMead,
   fermentationRisks,
-  gravitySource,
   HONEY_DENSITY_L_PER_KG,
 } from "@/lib/mead";
 import { defaultNitrogenNeed, NITROGEN_NEED_LABELS } from "@/lib/nutrients";
@@ -23,9 +22,8 @@ import { applyHoneyChangeKg, applyJuiceChangeL, applyWaterChangeL } from "@/lib/
 import { applySolvedRecipe, solveRecipe } from "@/lib/recipeSolver";
 import { STYLE_PROFILES, type StyleKind } from "@/lib/styles";
 import { unitsFor } from "@/lib/units";
-import { FlavorSummary } from "@/components/FlavorSummary";
 import { NutrientSchedule } from "@/components/NutrientSchedule";
-import { ProjectionStats } from "@/components/ProjectionStats";
+import { SpecSheet } from "@/components/SpecSheet";
 import { SpriteVessel } from "@/components/SpriteVessel";
 import { StylePicker } from "@/components/StylePicker";
 import { useUnits } from "@/components/UnitsToggle";
@@ -180,43 +178,9 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             />
           </Field>
 
-          {/* Style + target-sweetness picker — backward-designs the recipe */}
-          <StylePicker
-            style={currentStyle}
-            targetSweetness={currentSweetness}
-            onPickStyle={(k) => seedFromStyle(k)}
-            onPickSweetness={(s) => seedFromStyle(currentStyle, s)}
-          />
-          {styleWarning ? (
-            <p className="text-xs text-amber-900 bg-amber-50 border border-amber-300 rounded-md px-2.5 py-1.5">
-              {styleWarning}
-            </p>
-          ) : null}
-
-          {/* Honey cards */}
-          <Field label="Honey">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {Object.values(HONEYS).map((h) => (
-                <button
-                  key={h.type}
-                  type="button"
-                  aria-pressed={draft.honeyType === h.type}
-                  onClick={() => update("honeyType", h.type as HoneyType)}
-                  className="opt p-2 flex items-center gap-2 text-left"
-                >
-                  <span
-                    aria-hidden
-                    className="inline-block shrink-0 rounded-sm border border-[var(--ink)]"
-                    style={{ width: 20, height: 20, background: h.color }}
-                  />
-                  <span className="text-sm font-semibold leading-tight">{h.label}</span>
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-[var(--muted)] mt-1">{HONEYS[draft.honeyType].note}</p>
-          </Field>
-
-          {/* Vessel cards */}
+          {/* Vessel cards — chosen FIRST because every slider below is expressed
+              as a fraction of vessel capacity (the "VESSEL FULL" tag, the
+              capacity readout). Picking the container anchors everything. */}
           <Field label="Vessel">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {Object.values(VESSELS).map((v) => (
@@ -240,6 +204,44 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
                 </button>
               ))}
             </div>
+          </Field>
+
+          {/* Style + target-sweetness picker — backward-designs the recipe at
+              the vessel chosen above (so seeded amounts have a real volume to
+              scale into). */}
+          <StylePicker
+            style={currentStyle}
+            targetSweetness={currentSweetness}
+            onPickStyle={(k) => seedFromStyle(k)}
+            onPickSweetness={(s) => seedFromStyle(currentStyle, s)}
+          />
+          {styleWarning ? (
+            <p className="text-xs text-amber-900 bg-amber-50 border border-amber-300 rounded-md px-2.5 py-1.5">
+              {styleWarning}
+            </p>
+          ) : null}
+
+          {/* Honey type */}
+          <Field label="Honey">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {Object.values(HONEYS).map((h) => (
+                <button
+                  key={h.type}
+                  type="button"
+                  aria-pressed={draft.honeyType === h.type}
+                  onClick={() => update("honeyType", h.type as HoneyType)}
+                  className="opt p-2 flex items-center gap-2 text-left"
+                >
+                  <span
+                    aria-hidden
+                    className="inline-block shrink-0 rounded-sm border border-[var(--ink)]"
+                    style={{ width: 20, height: 20, background: h.color }}
+                  />
+                  <span className="text-sm font-semibold leading-tight">{h.label}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-[var(--muted)] mt-1">{HONEYS[draft.honeyType].note}</p>
           </Field>
 
           {/* Juice picker (optional — for melomels) */}
@@ -279,9 +281,12 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             )}
           </Field>
 
-          {/* Amount sliders — capacity-aware push-down (raising one reduces the
-              others proportionally; at capacity the slider stops). Honey is
-              in mass but counted in volume against the vessel. */}
+          {/* Fill the vessel. Sliders share its capacity — raising one reduces
+              the others proportionally; at capacity the slider stops. Honey is
+              entered in weight but counted in volume against the vessel. */}
+          <p className="eyebrow text-[var(--ink-soft)]">
+            Fill the {u.toDisplayVolume(vessel.capacityL).toFixed(1)} {u.volume} {vessel.shape === "bucket" ? "bucket" : "jar"}
+          </p>
           <div className="grid sm:grid-cols-2 gap-5">
             <CapSlider
               id="honeyKg"
@@ -428,27 +433,22 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
         </div>
       </div>
 
-      {/* stats */}
+      {/* Spec sheet — one consolidated table + visual; replaces the prior
+          separate ProjectionStats + FlavorSummary blocks. */}
       <div className="border-t border-[var(--line)] pt-4">
         {isEmpty ? (
           <p className="text-sm text-[var(--muted)]">
-            Add honey and water to see gravity, ABV, and a nutrient schedule.
+            Add honey and water (or juice) to see the spec sheet.
           </p>
         ) : (
-          <ProjectionStats
+          <SpecSheet
+            mead={draft}
             startingGravity={sg}
             estFinalGravity={estFG}
             estABV={estABV}
-            source={gravitySource(draft)}
           />
         )}
       </div>
-
-      {!isEmpty ? (
-        <div className="border-t border-[var(--line)] pt-4">
-          <FlavorSummary mead={draft} />
-        </div>
-      ) : null}
 
       {!isEmpty ? (
         <div className="border-t border-[var(--line)] pt-4">
