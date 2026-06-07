@@ -22,6 +22,14 @@ const STATUS_TAG: Record<AdditionStatus, { label: string; cls: string } | null> 
   upcoming: null,
 };
 
+// Date-column weight/colour per status, so the column tells you what to do now.
+const STATUS_DATE_CLS: Record<AdditionStatus, string> = {
+  done: "text-[var(--muted)] line-through",
+  overdue: "text-red-800 font-bold",
+  due: "text-amber-900 font-bold",
+  upcoming: "text-[var(--ink-soft)]",
+};
+
 // Read-only by default; an actionable checklist when `interactive` is set.
 export function NutrientSchedule({ mead, interactive = false, done = [], onToggle }: Props) {
   const schedule = tosnaSchedule(mead);
@@ -29,6 +37,9 @@ export function NutrientSchedule({ mead, interactive = false, done = [], onToggl
 
   const now = new Date();
   const doneCount = schedule.additions.filter((_, i) => done.includes(i)).length;
+  // The earliest not-yet-added addition is the immediate action — highlight it
+  // so the checklist points at "what to do next" even when nothing is overdue.
+  const nextIdx = interactive ? schedule.additions.findIndex((_, i) => !done.includes(i)) : -1;
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
@@ -66,10 +77,13 @@ export function NutrientSchedule({ mead, interactive = false, done = [], onToggl
           const isDone = done.includes(i);
           const status = nutrientAdditionStatus(a.at, now, isDone);
           const tag = interactive ? STATUS_TAG[status] : null;
+          const isNext = i === nextIdx && status === "upcoming";
           return (
             <li
               key={a.label}
-              className={`grid ${interactive ? "grid-cols-[1.5rem,1fr,4rem,4.5rem]" : "grid-cols-[1fr,4rem,4.5rem]"} gap-x-3 items-center text-sm`}
+              className={`grid ${interactive ? "grid-cols-[1.5rem,1fr,4rem,4.5rem]" : "grid-cols-[1fr,4rem,4.5rem]"} gap-x-3 items-center text-sm ${
+                isNext ? "border-l-2 border-[var(--accent)] pl-1 -ml-1.5 rounded-sm" : ""
+              }`}
             >
               {interactive ? (
                 <input
@@ -89,14 +103,17 @@ export function NutrientSchedule({ mead, interactive = false, done = [], onToggl
                       {tag.label}
                     </span>
                   ) : null}
+                  {isNext ? (
+                    <span className="ml-2 align-middle text-[10px] font-semibold text-[var(--accent-deep)]">next up</span>
+                  ) : null}
                 </p>
                 {a.note ? <p className="text-xs text-[var(--muted)] leading-tight">{a.note}</p> : null}
               </div>
 
-              <span className={`font-mono tabular-nums text-right ${isDone ? "text-[var(--muted)]" : ""}`}>
+              <span className={`font-mono tabular-nums text-right ${isDone ? "text-[var(--muted)] line-through" : "text-[var(--ink-soft)]"}`}>
                 {a.grams.toFixed(1)} g
               </span>
-              <span className={`font-mono tabular-nums text-right whitespace-nowrap ${isDone ? "text-[var(--muted)]" : ""}`}>
+              <span className={`font-mono tabular-nums text-right whitespace-nowrap ${interactive ? STATUS_DATE_CLS[status] : "text-[var(--ink-soft)]"}`}>
                 {fmtDate(a.at)}
               </span>
             </li>

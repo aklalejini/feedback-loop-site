@@ -5,10 +5,10 @@
 :root {
   --bg: #ece0c4;
   --ink: #3a2a18;
-  /* ink-soft / muted darkened for readable contrast on the parchment + cards
-     (>= ~4.5:1 for body, ~4:1 for small labels) — accessibility pass. */
-  --ink-soft: #4d3a25;
-  --muted: #5c4827;
+  /* ink-soft / muted darkened a further notch for AA contrast on the parchment
+     + cards, incl. small captions/labels — accessibility pass (review feedback). */
+  --ink-soft: #43301b;
+  --muted: #50401f;
   --line: #d3bd92;
   --line-soft: #e2d2ab;
   --card: #fbf4e3;
