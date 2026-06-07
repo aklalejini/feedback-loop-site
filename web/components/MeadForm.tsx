@@ -39,7 +39,7 @@ interface Props {
   submitLabel?: string;
 }
 
-const COMMON_SPICES = ["cinnamon", "vanilla bean", "orange peel", "clove", "ginger", "elderberry"];
+const COMMON_SPICES = ["cinnamon", "vanilla bean", "orange peel", "clove", "ginger", "elderberry", "cayenne", "habanero"];
 
 export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batch" }: Props) {
   const [draft, setDraft] = useState<Mead>(() => initial ?? blankMead());
@@ -458,12 +458,6 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             </p>
           ))
         : null}
-
-      {headspace < vessel.capacityL * 0.05 && !isEmpty ? (
-        <p className="text-sm text-red-800 bg-red-50 border border-red-300 rounded-md px-3 py-2">
-          Only {u.toDisplayVolume(Math.max(0, headspace)).toFixed(2)} {u.volume} of headspace left — leave room so foaming mead doesn&apos;t push into the airlock.
-        </p>
-      ) : null}
 
       <div className="flex gap-3 justify-end">
         {onCancel ? (
