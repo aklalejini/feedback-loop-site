@@ -22,7 +22,8 @@ const config: Config = {
       },
       fontFamily: {
         display: ["var(--font-display)", "ui-serif", "Georgia", "serif"],
-        body: ["var(--font-body)", "ui-sans-serif", "system-ui", "sans-serif"],
+        body: ["var(--font-body)", "ui-serif", "Georgia", "serif"],
+        wordmark: ["var(--font-wordmark)", "ui-serif", "serif"],
       },
       boxShadow: {
         soft: "0 6px 18px -8px rgba(58,40,16,0.35), 0 1px 2px rgba(58,40,16,0.12)",
