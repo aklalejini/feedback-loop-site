@@ -307,7 +307,7 @@ export function SpriteVessel({ vessel, honeyType, juiceType, juiceL, liters, pha
     // subtle amber wash below it — the wall stays painted, but the maker can read
     // the volume at a glance. Skipped when there's no liquid.
     if (meta.solid && fill > 0) {
-      drawSolidLevel(sx, liquidTop, intY1, intX, intW, pal);
+      drawSolidLevel(sx, sprite, meta, liquidTop, intY1, intX, intW, pal);
     }
 
     const drawFrame = (t: number) => {
@@ -363,12 +363,15 @@ export function SpriteVessel({ vessel, honeyType, juiceType, juiceL, liters, pha
   );
 }
 
-// Faux see-through level indicator for opaque vessels (buckets). Draws a soft
-// amber vertical wash below the liquid line and a thin crisp meniscus-style line
-// across the body band. Read by makers as "the bucket is partly translucent and
-// I can see the mead behind the wall."
+// Faux see-through level indicator for opaque vessels (buckets). The level wash
+// is painted on its own layer and then clipped to the bucket silhouette (the
+// sprite's alpha), so the amber fill follows the tapered walls instead of
+// sitting as a flat rectangle. Read by makers as "the bucket is partly
+// translucent and I can see the mead behind the wall."
 function drawSolidLevel(
   ctx: CanvasRenderingContext2D,
+  sprite: HTMLImageElement,
+  meta: Meta,
   liquidTop: number,
   bodyBottom: number,
   bodyX: number,
@@ -376,24 +379,46 @@ function drawSolidLevel(
   pal: Palette,
 ) {
   if (bodyW <= 0 || bodyBottom <= liquidTop) return;
-  const inset = Math.max(6, Math.round(bodyW * 0.07));
-  const x = bodyX + inset;
-  const w = bodyW - 2 * inset;
-  const h = bodyBottom - liquidTop;
-  // amber wash, fades upward, capped low so the bucket still reads as opaque
-  ctx.save();
-  const wash = ctx.createLinearGradient(0, liquidTop, 0, bodyBottom);
+  const W = meta.w;
+  const H = meta.h;
+  const layer = document.createElement("canvas");
+  layer.width = W;
+  layer.height = H;
+  const lx = layer.getContext("2d");
+  if (!lx) return;
+  lx.imageSmoothingEnabled = true;
+
+  // vertical amber wash — transparent at the surface, deepening downward. Kept
+  // moderate so the bucket still reads as an opaque vessel.
+  const wash = lx.createLinearGradient(0, liquidTop, 0, bodyBottom);
   wash.addColorStop(0, pal.body + "00");
-  wash.addColorStop(0.15, pal.body + "40");
-  wash.addColorStop(1, pal.deep + "66");
-  ctx.fillStyle = wash;
-  ctx.fillRect(x, liquidTop, w, h);
-  // bright meniscus line at the level
-  ctx.fillStyle = "rgba(255,250,235,0.55)";
-  ctx.fillRect(x, liquidTop, w, 1.5);
-  ctx.fillStyle = "rgba(60,35,5,0.32)";
-  ctx.fillRect(x, liquidTop + 1.5, w, 1);
-  ctx.restore();
+  wash.addColorStop(0.12, pal.body + "55");
+  wash.addColorStop(1, pal.deep + "7a");
+  lx.fillStyle = wash;
+  lx.fillRect(0, liquidTop, W, bodyBottom - liquidTop);
+
+  // horizontal rounding so the tinted wall reads as a curved surface, not a flat
+  // panel — darker at the edges, a soft sheen left-of-centre.
+  const hg = lx.createLinearGradient(bodyX, 0, bodyX + bodyW, 0);
+  hg.addColorStop(0.0, "rgba(40,20,0,0.22)");
+  hg.addColorStop(0.18, "rgba(0,0,0,0)");
+  hg.addColorStop(0.4, "rgba(255,250,235,0.10)");
+  hg.addColorStop(0.62, "rgba(0,0,0,0)");
+  hg.addColorStop(1.0, "rgba(35,18,0,0.28)");
+  lx.fillStyle = hg;
+  lx.fillRect(bodyX - 24, liquidTop, bodyW + 48, bodyBottom - liquidTop);
+
+  // bright meniscus line at the surface + a soft shadow just beneath it
+  lx.fillStyle = "rgba(255,250,235,0.6)";
+  lx.fillRect(0, liquidTop, W, 1.5);
+  lx.fillStyle = "rgba(60,35,5,0.3)";
+  lx.fillRect(0, liquidTop + 1.5, W, 1);
+
+  // clip the whole wash to the bucket silhouette so it hugs the tapered walls
+  lx.globalCompositeOperation = "destination-in";
+  lx.drawImage(sprite, 0, 0);
+
+  ctx.drawImage(layer, 0, 0);
 }
 
 // soft elliptical ground shadow under the vessel
