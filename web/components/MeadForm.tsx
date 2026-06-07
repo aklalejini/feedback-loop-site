@@ -148,6 +148,8 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             <SpriteVessel
               vessel={draft.vessel}
               honeyType={draft.honeyType}
+              juiceType={draft.juiceType}
+              juiceL={draft.juiceL}
               liters={totalL}
               phase="lag"
               size={150}
