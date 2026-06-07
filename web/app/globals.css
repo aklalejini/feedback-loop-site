@@ -68,15 +68,6 @@ h1, h2, h3, h4 {
 /* headings sit directly on the stone, so give them a subtle shadow for crispness */
 h1, h2 { text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55); }
 
-/* Blackletter wordmark — used ONLY for the logo (never headers/body). */
-.wordmark {
-  font-family: var(--font-wordmark), var(--font-display), ui-serif, serif;
-  font-weight: 400;
-  color: var(--ink);
-  letter-spacing: 0.01em;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
-}
-
 a { color: var(--green); text-underline-offset: 2px; }
 a:hover { text-decoration: underline; }
 
