@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Fraunces, Mulish } from "next/font/google";
+import { Fraunces, Mulish, Press_Start_2P } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { UnitsToggle } from "@/components/UnitsToggle";
+import { HeroBand } from "@/components/HeroBand";
 import "./globals.css";
 
 const display = Fraunces({
@@ -19,49 +20,39 @@ const body = Mulish({
   display: "swap",
 });
 
+const pixel = Press_Start_2P({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-pixel",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Mead Planner — design and track your batch",
   description:
     "Design a virtual mead batch, see a projected fermentation timeline, and update it as fermentation progresses.",
 };
 
-function DropMark() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
-      <path
-        d="M12 2.5C12 2.5 5 10.2 5 15a7 7 0 0 0 14 0c0-4.8-7-12.5-7-12.5Z"
-        fill="var(--accent)"
-        stroke="var(--ink)"
-        strokeWidth="1.3"
-        strokeLinejoin="round"
-      />
-      <ellipse cx="9.4" cy="13.2" rx="1.5" ry="2.3" fill="rgba(255,255,255,0.55)" />
-    </svg>
-  );
-}
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html lang="en" className={`${display.variable} ${body.variable} ${pixel.variable}`}>
       <body>
         <Analytics />
-        <main className="max-w-5xl mx-auto px-5 py-9">
-          <header className="mb-9">
-            <div className="flex items-center justify-between gap-4">
-              <a href="/" className="inline-flex items-center gap-2.5 no-underline text-[var(--ink)]">
-                <DropMark />
-                <span className="font-display text-2xl font-semibold tracking-tight">Mead Planner</span>
-              </a>
-              <nav className="flex items-center gap-3 text-sm">
-                <a href="/yeast" className="no-underline text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
+        <main className="max-w-5xl mx-auto px-5 py-7">
+          <HeroBand
+            rightSlot={
+              <>
+                <a
+                  href="/yeast"
+                  className="text-sm no-underline text-[#f6e2b9] hover:text-white hover:underline drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]"
+                >
                   Yeast guide
                 </a>
                 <UnitsToggle />
-              </nav>
-            </div>
-            <div className="divider mt-4" />
-          </header>
-          {children}
+              </>
+            }
+          />
+          <div className="workspace mt-6">{children}</div>
         </main>
       </body>
     </html>
