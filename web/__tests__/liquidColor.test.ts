@@ -27,16 +27,23 @@ describe("liquidBaseHex — colour blending", () => {
     expect(bb).toBeLessThanOrEqual(Math.max(hb, jb));
   });
 
-  it("a high juice fraction (≥0.67) blends to the pure juice colour (1.5× intensifier caps at 1)", () => {
-    expect(liquidBaseHex("clover", "grape", 0.75)).toBe(JUICES.grape.color);
+  it("a high juice fraction (≥~0.46) blends to the pure juice colour (weight caps at 1)", () => {
+    // weight = 0.4 + fraction*1.3 → reaches 1.0 at fraction ≈ 0.462
+    expect(liquidBaseHex("clover", "grape", 0.5)).toBe(JUICES.grape.color);
     expect(liquidBaseHex("clover", "blackcurrant", 1.0)).toBe(JUICES.blackcurrant.color);
   });
 
-  it("small juice fractions still tint perceptibly (intensifier ×1.5)", () => {
-    // At 20% volume the effective weight is 0.30 — a real shift, not a token one.
+  it("even a small juice fraction shifts most of the way (pigments dominate)", () => {
+    // At 20% volume the weight is 0.4 + 0.26 = 0.66 — a strong, obvious shift.
     const before = rgb(HONEYS.wildflower.color);
     const after = rgb(liquidBaseHex("wildflower", "tart_cherry", 0.2));
     const dist = Math.hypot(after[0] - before[0], after[1] - before[1], after[2] - before[2]);
-    expect(dist).toBeGreaterThan(15); // not zero, and not just rounding noise
+    expect(dist).toBeGreaterThan(40);
+  });
+
+  it("a 30% blueberry melomel reads blue (blue channel dominates red & green)", () => {
+    const [r, g, b] = rgb(liquidBaseHex("wildflower", "blueberry", 0.3));
+    expect(b).toBeGreaterThan(r);
+    expect(b).toBeGreaterThan(g);
   });
 });

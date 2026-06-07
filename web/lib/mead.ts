@@ -26,7 +26,7 @@ export const JUICES: Record<JuiceKind, JuiceInfo> = {
   tart_cherry:  { kind: "tart_cherry",  label: "Tart cherry",  color: "#a92a3b", typicalBrix: 14.0, note: "Bright acid, deep color." },
   pomegranate:  { kind: "pomegranate",  label: "Pomegranate",  color: "#8a1d2a", typicalBrix: 15.0, note: "Pucker + colour; pair with lower honey." },
   orange:       { kind: "orange",       label: "Orange",       color: "#e08f24", typicalBrix: 11.0, note: "Bright citrus; lower sugar." },
-  blueberry:    { kind: "blueberry",    label: "Blueberry",    color: "#3b2a78", typicalBrix: 14.0, note: "Deep purple, mellow fruit — base for bilbemel." },
+  blueberry:    { kind: "blueberry",    label: "Blueberry",    color: "#34378c", typicalBrix: 14.0, note: "Deep blue-purple, mellow fruit — base for bilbemel." },
   blackcurrant: { kind: "blackcurrant", label: "Blackcurrant", color: "#321b3a", typicalBrix: 15.0, note: "Tart, jammy, intense colour — the black mead juice." },
 };
 

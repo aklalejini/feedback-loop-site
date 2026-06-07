@@ -22,11 +22,12 @@ export function mixHex(a: string, b: string, w: number): string {
   return `#${to(r)}${to(g)}${to(bl)}`;
 }
 
-// Blend honey + juice colours into the liquid's base. Weight starts from the
-// juice's VOLUME share, then gets intensified (×1.5, capped at 1) so dark
-// saturated juices like grape / blackcurrant / pomegranate visibly dominate
-// even at modest fractions — matching how a real melomel looks darker than its
-// sugar contribution alone would suggest.
+// Blend honey + juice colours into the liquid's base. Fruit pigments
+// (anthocyanins) are potent and dominate a pale honey must well beyond their
+// volume share — so the colour weight is biased high: any real juice presence
+// jumps the blend most of the way to the juice colour, and ~45%+ volume reaches
+// the pure juice colour. (A pure volume-average muddies amber + blue into brown,
+// which is why blueberry barely showed before.)
 export function liquidBaseHex(
   honeyType: HoneyType,
   juiceType?: JuiceKind,
@@ -35,6 +36,6 @@ export function liquidBaseHex(
   const honey = HONEYS[honeyType].color;
   if (!juiceType || juiceFraction <= 0) return honey;
   const juice = JUICES[juiceType].color;
-  const w = Math.min(1, juiceFraction * 1.5);
+  const w = clamp(0.4 + juiceFraction * 1.3, 0, 1);
   return mixHex(honey, juice, w);
 }
