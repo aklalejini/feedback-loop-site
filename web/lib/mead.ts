@@ -3,7 +3,7 @@
 
 export type HoneyType = "clover" | "wildflower" | "orange_blossom" | "buckwheat" | "raw";
 export type YeastStrain = "EC-1118" | "D-47" | "K1-V1116" | "71B-1122" | "Wyeast-4632" | "Bread";
-export type VesselKind = "jar-1gal" | "bucket-5gal";
+export type VesselKind = "jar-1gal" | "jug-1gal" | "jug-5gal" | "bucket-5gal";
 export type PhaseName = "lag" | "primary" | "secondary" | "conditioning" | "done";
 export type NitrogenNeed = "low" | "medium" | "high";
 
@@ -72,6 +72,8 @@ export interface VesselInfo {
 
 export const VESSELS: Record<VesselKind, VesselInfo> = {
   "jar-1gal":    { kind: "jar-1gal",    capacityL: 3.78, label: "1-gallon jar",    shape: "jug" },
+  "jug-1gal":    { kind: "jug-1gal",    capacityL: 3.78, label: "1-gallon jug",    shape: "jug" },
+  "jug-5gal":    { kind: "jug-5gal",    capacityL: 18.9, label: "5-gallon jug",    shape: "jug" },
   "bucket-5gal": { kind: "bucket-5gal", capacityL: 18.9, label: "5-gallon bucket", shape: "bucket" },
 };
 
