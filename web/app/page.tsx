@@ -127,6 +127,8 @@ function BatchRow({ mead: m }: { mead: Mead }) {
         <SpriteVessel
           vessel={m.vessel}
           honeyType={m.honeyType}
+          juiceType={m.juiceType}
+          juiceL={m.juiceL}
           liters={m.waterL + (m.juiceL ?? 0) + m.honeyKg * 0.7}
           phase={displayPhase}
           size={120}

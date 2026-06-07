@@ -4,14 +4,21 @@ import {
   HONEYS,
   VESSELS,
   type HoneyType,
+  type JuiceKind,
   type PhaseName,
   type VesselKind,
 } from "@/lib/mead";
+import { liquidBaseHex } from "@/lib/liquidColor";
 import { PixelVessel } from "./PixelVessel";
 
 interface Props {
   vessel: VesselKind;
   honeyType: HoneyType;
+  // Optional juice — when present, its colour is blended into the liquid
+  // weighted by its volume share (intensified so dark juices like grape /
+  // blackcurrant show through). Honey-only stays honey-coloured.
+  juiceType?: JuiceKind;
+  juiceL?: number;
   liters: number;
   phase: PhaseName;
   size?: number;
@@ -120,11 +127,13 @@ function lift(hex: string, dL: number, dS = 0): string {
 }
 
 interface Palette { top: string; body: string; deep: string; surface: string; foam: string; foamHi: string; sed: string }
-function paletteFor(honey: HoneyType): Palette {
-  const base = HONEYS[honey].color;
+// Build a liquid palette from an arbitrary base hex (already-blended honey +
+// juice). Darker / more saturated bases produce purpler liquids; amber stays
+// amber. The lightness clamp keeps the body in a luminous-enough band that
+// deep colours don't look muddy.
+function paletteFromBase(base: string): Palette {
   const [h, s, l] = hexToHsl(base);
-  // keep the body luminous; clamp lightness into a pleasant amber band
-  const bodyL = clamp(l, 0.46, 0.6);
+  const bodyL = clamp(l, 0.32, 0.6);
   const body = hslToHex(h, clamp(s * 1.06, 0, 1), bodyL);
   return {
     top: lift(body, 0.07, 0.02),
@@ -152,7 +161,7 @@ function seedFrom(s: string): number {
   return h >>> 0;
 }
 
-export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, animated = true, className }: Props) {
+export function SpriteVessel({ vessel, honeyType, juiceType, juiceL, liters, phase, size = 200, animated = true, className }: Props) {
   const [assets, setAssets] = useState<Assets | "fallback" | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -172,7 +181,12 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
     ctx.imageSmoothingQuality = "high";
 
     const { sprite, mask, meta } = assets;
-    const pal = paletteFor(honeyType);
+    // Juice volume share of the total liquid drives the colour blend. We use
+    // the raw `liters` (the same number the renderer fills the vessel with) so
+    // colour and fill ratio agree exactly.
+    const juiceFrac = juiceType && juiceL && liters > 0 ? Math.min(1, juiceL / liters) : 0;
+    const liquidBase = liquidBaseHex(honeyType, juiceType, juiceFrac);
+    const pal = paletteFromBase(liquidBase);
     const viz = PHASE_VIZ[phase];
     const capacity = VESSELS[vessel].capacityL;
     const fill = liters <= 0.01 ? 0 : clamp(liters / capacity, 0.06, 0.95);
@@ -319,7 +333,7 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [assets, vessel, honeyType, liters, phase, animated]);
+  }, [assets, vessel, honeyType, juiceType, juiceL, liters, phase, animated]);
 
   if (assets === "fallback") {
     return (
