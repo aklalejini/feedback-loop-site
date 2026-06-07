@@ -289,6 +289,12 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
     sx.globalCompositeOperation = "source-over";
     // Only draw the procedural cork + airlock when the art doesn't already have one.
     if (!meta.artAirlock) drawCorkAndAirlock(sx, meta);
+    // Opaque vessels (buckets) show their level as a faux see-through line + a
+    // subtle amber wash below it — the wall stays painted, but the maker can read
+    // the volume at a glance. Skipped when there's no liquid.
+    if (meta.solid && fill > 0) {
+      drawSolidLevel(sx, liquidTop, intY1, intX, intW, pal);
+    }
 
     const drawFrame = (t: number) => {
       ctx.clearRect(0, 0, meta.w, meta.h);
@@ -341,6 +347,39 @@ export function SpriteVessel({ vessel, honeyType, liters, phase, size = 200, ani
       style={{ width: size, height: (size * h) / w, display: "block" }}
     />
   );
+}
+
+// Faux see-through level indicator for opaque vessels (buckets). Draws a soft
+// amber vertical wash below the liquid line and a thin crisp meniscus-style line
+// across the body band. Read by makers as "the bucket is partly translucent and
+// I can see the mead behind the wall."
+function drawSolidLevel(
+  ctx: CanvasRenderingContext2D,
+  liquidTop: number,
+  bodyBottom: number,
+  bodyX: number,
+  bodyW: number,
+  pal: Palette,
+) {
+  if (bodyW <= 0 || bodyBottom <= liquidTop) return;
+  const inset = Math.max(6, Math.round(bodyW * 0.07));
+  const x = bodyX + inset;
+  const w = bodyW - 2 * inset;
+  const h = bodyBottom - liquidTop;
+  // amber wash, fades upward, capped low so the bucket still reads as opaque
+  ctx.save();
+  const wash = ctx.createLinearGradient(0, liquidTop, 0, bodyBottom);
+  wash.addColorStop(0, pal.body + "00");
+  wash.addColorStop(0.15, pal.body + "40");
+  wash.addColorStop(1, pal.deep + "66");
+  ctx.fillStyle = wash;
+  ctx.fillRect(x, liquidTop, w, h);
+  // bright meniscus line at the level
+  ctx.fillStyle = "rgba(255,250,235,0.55)";
+  ctx.fillRect(x, liquidTop, w, 1.5);
+  ctx.fillStyle = "rgba(60,35,5,0.32)";
+  ctx.fillRect(x, liquidTop + 1.5, w, 1);
+  ctx.restore();
 }
 
 // soft elliptical ground shadow under the vessel

@@ -14,16 +14,16 @@
     "width": 24
   },
   "interior": {
-    "x": 0,
-    "y": 0,
-    "w": 480,
-    "h": 480
+    "x": 126,
+    "y": 112,
+    "w": 233,
+    "h": 300
   },
   "fill": {
-    "top": 0,
-    "bottom": 479,
-    "x": 0,
-    "w": 480
+    "top": 112,
+    "bottom": 411,
+    "x": 126,
+    "w": 233
   },
   "artAirlock": true,
   "solid": true

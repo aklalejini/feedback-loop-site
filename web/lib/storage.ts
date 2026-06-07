@@ -2,14 +2,12 @@ import type { Mead, VesselKind } from "./mead";
 
 const KEY = "feedback-loop-site:meads:v1";
 
-// Map retired vessel kinds onto the current two (jar / bucket) so batches saved
-// before the consolidation still render. Kept here (boundary), not in the model.
+// Map retired vessel kinds onto current ones. jug-1gal/jug-5gal are valid kinds
+// again, so we no longer migrate them away — only the long-gone carboy/demijohn.
 const VESSEL_ALIASES: Record<string, VesselKind> = {
-  "jug-1gal": "jar-1gal",
-  "carboy-1gal": "jar-1gal",
-  "jug-5gal": "bucket-5gal",
-  "carboy-5gal": "bucket-5gal",
-  "demijohn-3gal": "bucket-5gal",
+  "carboy-1gal": "jug-1gal",
+  "carboy-5gal": "jug-5gal",
+  "demijohn-3gal": "jug-5gal",
 };
 
 function migrate(m: Mead): Mead {

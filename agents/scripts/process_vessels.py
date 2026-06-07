@@ -190,31 +190,51 @@ def process(src_path: Path, kind: str, *, solid: bool = False,
         ibbox = {"x": 0, "y": 0, "w": w, "h": h}
 
     # Fill range: liquid sits between the top of the STRAIGHT BODY (below the
-    # narrowing shoulder/neck) and the cavity bottom. Use the MEDIAN body width
-    # over the middle of the cavity as the reference, so a wide shadow fringe or
-    # a single fat row can't skew it.
-    row_w = np.array([int(interior_mask[y].sum()) for y in range(h)])
-    nz = np.where(row_w > 0)[0]
-    if nz.size:
-        cav_top, cav_bot = int(nz[0]), int(nz[-1])
-        ch = cav_bot - cav_top
-        mid = row_w[cav_top + int(0.2 * ch): cav_top + int(0.8 * ch) + 1]
-        mid = mid[mid > 0]
-        body_med = float(np.median(mid)) if mid.size else float(row_w.max())
-        top_candidates = np.where(row_w >= 0.8 * body_med)[0]
-        fill_top = int(top_candidates[0]) if top_candidates.size else cav_top
-        bot_candidates = np.where(row_w >= 0.5 * body_med)[0]
-        fill_bottom = int(bot_candidates[-1]) if bot_candidates.size else cav_bot
+    # narrowing shoulder/neck) and the cavity bottom. For glass vessels we use the
+    # interior cavity; for SOLID vessels there is no cavity, so the body band is
+    # taken from the silhouette itself — the rows whose width is close to the max
+    # are the cylindrical body wall (above the base shadow, below the lid lip).
+    if solid:
+        row_w = vessel_mask.sum(axis=1).astype(int)
+        max_w = int(row_w.max()) if row_w.size else 0
+        body_rows_idx = np.where(row_w >= 0.93 * max_w)[0]
+        if body_rows_idx.size and max_w > 0:
+            fill_top = int(body_rows_idx.min())
+            fill_bottom = int(body_rows_idx.max())
+            cols = np.where(vessel_mask[(fill_top + fill_bottom) // 2])[0]
+            body_bbox = {"x": int(cols.min()), "w": int(cols.max() - cols.min() + 1)}
+        else:
+            fill_top = int(ibbox["y"])
+            fill_bottom = int(ibbox["y"] + ibbox["h"] - 1)
+            body_bbox = {"x": ibbox["x"], "w": ibbox["w"]}
     else:
-        fill_top = int(ibbox["y"])
-        fill_bottom = int(ibbox["y"] + ibbox["h"] - 1)
+        row_w = np.array([int(interior_mask[y].sum()) for y in range(h)])
+        nz = np.where(row_w > 0)[0]
+        if nz.size:
+            cav_top, cav_bot = int(nz[0]), int(nz[-1])
+            ch = cav_bot - cav_top
+            mid = row_w[cav_top + int(0.2 * ch): cav_top + int(0.8 * ch) + 1]
+            mid = mid[mid > 0]
+            body_med = float(np.median(mid)) if mid.size else float(row_w.max())
+            top_candidates = np.where(row_w >= 0.8 * body_med)[0]
+            fill_top = int(top_candidates[0]) if top_candidates.size else cav_top
+            bot_candidates = np.where(row_w >= 0.5 * body_med)[0]
+            fill_bottom = int(bot_candidates[-1]) if bot_candidates.size else cav_bot
+        else:
+            fill_top = int(ibbox["y"])
+            fill_bottom = int(ibbox["y"] + ibbox["h"] - 1)
 
-    body_rows = interior_mask[fill_top:fill_bottom + 1]
-    bxs = np.where(body_rows.any(axis=0))[0]
-    if bxs.size:
-        body_bbox = {"x": int(bxs.min()), "w": int(bxs.max() - bxs.min() + 1)}
-    else:
-        body_bbox = {"x": ibbox["x"], "w": ibbox["w"]}
+        body_rows = interior_mask[fill_top:fill_bottom + 1]
+        bxs = np.where(body_rows.any(axis=0))[0]
+        if bxs.size:
+            body_bbox = {"x": int(bxs.min()), "w": int(bxs.max() - bxs.min() + 1)}
+        else:
+            body_bbox = {"x": ibbox["x"], "w": ibbox["w"]}
+
+    # For solid vessels the "interior" placeholder should also reflect the body
+    # band, so callers reading meta.interior get sensible numbers.
+    if solid:
+        ibbox = {"x": body_bbox["x"], "y": fill_top, "w": body_bbox["w"], "h": fill_bottom - fill_top + 1}
 
     # Pad top with headroom transparent rows so the procedural cork + airlock
     # have somewhere to live above the imported vessel.
