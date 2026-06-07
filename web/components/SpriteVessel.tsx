@@ -33,7 +33,7 @@ interface Meta {
   bg?: [number, number, number];
   neck: { cx: number; y_top: number; y_bottom: number; width: number };
   interior: { x: number; y: number; w: number; h: number };
-  fill?: { top: number; bottom: number; x: number; w: number };
+  fill?: { top: number; bottom: number; x: number; w: number; ellipse?: number };
   // the source art already includes a lid + airlock → don't draw the procedural one
   artAirlock?: boolean;
   // opaque vessel (bucket) — the liquid is faked as a see-through level
@@ -249,12 +249,41 @@ export function SpriteVessel({ vessel, honeyType, juiceType, juiceL, liters, pha
       const l = liq.getContext("2d")!;
       l.imageSmoothingEnabled = true;
 
-      const vg = l.createLinearGradient(0, liquidTop, 0, intY1);
+      // The vessel is rendered as if viewed slightly from above, so the liquid
+      // surface is an ellipse, not a flat line. The back half of the ellipse
+      // bulges UP above liquidTop (water visible at the back rises above the
+      // side rims); the front half dips DOWN below liquidTop (the meniscus
+      // "smile" at the front). The cavity mask still clips the walls, so we
+      // only need the surface shape here.
+      const halfWLiq = intW / 2;
+      const cxLiq = intX + halfWLiq;
+      const ratio = fillMeta.ellipse ?? 0;
+      const eTop = ratio * halfWLiq;
+      const topY = liquidTop - eTop;
+
+      // Slab shape: cylinder with an elliptical cap on top (back arc going up).
+      const slab = new Path2D();
+      slab.moveTo(intX - 6, liquidTop);
+      if (eTop > 0.5) {
+        slab.lineTo(intX, liquidTop);
+        slab.ellipse(cxLiq, liquidTop, halfWLiq, eTop, 0, Math.PI, 0, true);
+        slab.lineTo(intX + intW + 6, liquidTop);
+      } else {
+        slab.lineTo(intX + intW + 6, liquidTop);
+      }
+      slab.lineTo(intX + intW + 6, intY1 + 6);
+      slab.lineTo(intX - 6, intY1 + 6);
+      slab.closePath();
+
+      l.save();
+      l.clip(slab);
+
+      const vg = l.createLinearGradient(0, topY, 0, intY1);
       vg.addColorStop(0, pal.top);
       vg.addColorStop(0.45, pal.body);
       vg.addColorStop(1, pal.deep);
       l.fillStyle = vg;
-      l.fillRect(intX - 6, liquidTop, intW + 12, liquidH + 6);
+      l.fillRect(intX - 6, topY, intW + 12, intY1 - topY + 6);
 
       // horizontal roundness — light from upper-left, edges fall off
       const hg = l.createLinearGradient(intX, 0, intX + intW, 0);
@@ -264,7 +293,7 @@ export function SpriteVessel({ vessel, honeyType, juiceType, juiceL, liters, pha
       hg.addColorStop(0.6, "rgba(0,0,0,0)");
       hg.addColorStop(1.0, "rgba(50,25,0,0.24)");
       l.fillStyle = hg;
-      l.fillRect(intX - 6, liquidTop, intW + 12, liquidH + 6);
+      l.fillRect(intX - 6, topY, intW + 12, intY1 - topY + 6);
 
       // soft specular bloom on the upper-left
       const cxh = intX + intW * 0.34;
@@ -285,19 +314,53 @@ export function SpriteVessel({ vessel, honeyType, juiceType, juiceL, liters, pha
         l.fillRect(intX - 6, intY1 - sedH, intW + 12, sedH + 6);
       }
 
-      // krausen foam + meniscus
+      l.restore();
+
+      // krausen foam — an elliptical disk riding the surface (matches the
+      // viewing angle so it reads as a layer of bubbles seen from above).
       const foamH = Math.max(2, Math.round(viz.foam * liquidH));
       if (foamH >= 2) {
-        const fg = l.createLinearGradient(0, liquidTop, 0, liquidTop + foamH);
+        const foamPath = new Path2D();
+        if (eTop > 0.5) {
+          foamPath.moveTo(intX, liquidTop);
+          foamPath.ellipse(cxLiq, liquidTop, halfWLiq, eTop, 0, Math.PI, 0, true);
+          foamPath.lineTo(intX + intW, liquidTop + foamH);
+          foamPath.ellipse(cxLiq, liquidTop + foamH, halfWLiq, eTop, 0, 0, Math.PI, false);
+          foamPath.closePath();
+        } else {
+          foamPath.rect(intX - 6, liquidTop, intW + 12, foamH);
+        }
+        const fg = l.createLinearGradient(0, topY, 0, liquidTop + foamH);
         fg.addColorStop(0, pal.foamHi);
         fg.addColorStop(1, pal.foam);
         l.fillStyle = fg;
-        l.fillRect(intX - 6, liquidTop, intW + 12, foamH);
-        l.fillStyle = "rgba(60,35,5,0.12)";
-        l.fillRect(intX - 6, liquidTop + foamH, intW + 12, 2);
+        l.fill(foamPath);
+        // soft shadow line just under the krausen
+        l.strokeStyle = "rgba(60,35,5,0.18)";
+        l.lineWidth = 1.5;
+        l.beginPath();
+        if (eTop > 0.5) {
+          l.ellipse(cxLiq, liquidTop + foamH, halfWLiq, eTop, 0, 0, Math.PI * 2);
+        } else {
+          l.moveTo(intX - 6, liquidTop + foamH);
+          l.lineTo(intX + intW + 6, liquidTop + foamH);
+        }
+        l.stroke();
       }
-      l.fillStyle = "rgba(255,253,245,0.5)";
-      l.fillRect(intX - 6, liquidTop, intW + 12, 1.5);
+
+      // meniscus — full ellipse at the surface so the back rim reads above and
+      // the front dip reads below liquidTop, like a real waterline seen from
+      // slightly above. Falls back to a flat highlight when ratio = 0.
+      l.strokeStyle = "rgba(255,253,245,0.6)";
+      l.lineWidth = 1.5;
+      l.beginPath();
+      if (eTop > 0.5) {
+        l.ellipse(cxLiq, liquidTop, halfWLiq, eTop, 0, 0, Math.PI * 2);
+      } else {
+        l.moveTo(intX - 6, liquidTop);
+        l.lineTo(intX + intW + 6, liquidTop);
+      }
+      l.stroke();
 
       // clip the liquid to the cavity, then lay it over the cream base
       l.globalCompositeOperation = "destination-in";
