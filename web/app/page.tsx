@@ -40,9 +40,9 @@ export default function HomePage() {
   return (
     <div className="grid gap-8">
       <section className="grid gap-3">
-        <p className="eyebrow">a brewer&apos;s workbench</p>
+        <p className="eyebrow text-on-wall">a brewer&apos;s workbench</p>
         <h1 className="text-4xl sm:text-5xl font-display font-semibold leading-[1.05]">Plan and track your mead.</h1>
-        <p className="text-[var(--ink-soft)] max-w-2xl leading-relaxed">
+        <p className="text-[var(--ink-soft)] text-on-wall max-w-2xl leading-relaxed">
           Design a batch, watch a projected fermentation timeline unfold, and log observations as it
           progresses. Nothing leaves your browser — your batches live in local storage on this device.
         </p>

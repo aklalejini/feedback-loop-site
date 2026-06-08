@@ -19,21 +19,27 @@ const phaseLabel: Record<string, string> = {
   done: "Ready",
 };
 
-// Honey → aged-oak ramp, harmonised with the apothecary palette.
+// Honey → aged-oak ramp, harmonised with the apothecary palette. The
+// luminance steps are deliberately spaced (lag ~0.81, primary ~0.59, secondary
+// ~0.45, conditioning ~0.24, done ~0.13) so adjacent phases read as clearly
+// distinct rather than three browns; conditioning shifts a touch cooler than
+// the amber pair above it.
 const phaseColor: Record<string, string> = {
   lag: "#e2cfa3",
   primary: "#c88a2c",
   secondary: "#a4641d",
-  conditioning: "#6f4520",
-  done: "#3f2d18",
+  conditioning: "#4a2f12",
+  done: "#241808",
 };
 
-// Pick readable text (ink vs cream) per segment by background luminance.
+// Pick readable text (ink vs cream) per segment by background luminance. The
+// threshold is set to keep mid-light amber (primary) on ink, where contrast is
+// strong (4.68 vs 2.75 for cream); secondary/conditioning/done stay on cream.
 function textOn(hex: string): string {
   const n = parseInt(hex.slice(1), 16);
   const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
   const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return lum > 0.62 ? "#3a2a18" : "#fff6e6";
+  return lum > 0.5 ? "#3a2a18" : "#fff6e6";
 }
 
 function fmtDate(iso: string | number): string {
@@ -44,6 +50,15 @@ function fmtDate(iso: string | number): string {
 function anchor(pct: number): React.CSSProperties {
   if (pct <= 6) return { left: "0%", transform: "none", textAlign: "left" };
   if (pct >= 94) return { left: "100%", transform: "translateX(-100%)", textAlign: "right" };
+  return { left: `${pct}%`, transform: "translateX(-50%)", textAlign: "center" };
+}
+
+// Same horizontal anchoring as `anchor()` but with a small inset at the very
+// edges so a left/right-aligned pill (like Today) doesn't sit flush against the
+// bar's rounded corner — looks like a rendering glitch when it does.
+function pillAnchor(pct: number): React.CSSProperties {
+  if (pct <= 6) return { left: 6, transform: "none", textAlign: "left" };
+  if (pct >= 94) return { right: 6, transform: "none", textAlign: "right" };
   return { left: `${pct}%`, transform: "translateX(-50%)", textAlign: "center" };
 }
 
@@ -84,9 +99,10 @@ export function Timeline({ projection, now = new Date(), selectedPhase, onSelect
   return (
     <div className="grid gap-1.5">
       {/* marker lane + bar share a relative box so the Today marker is one piece
-          that visibly drops onto the bar */}
+          that visibly drops onto the bar. Extra lane height gives the pill room
+          so it doesn't kiss the bar's rounded top corner. */}
       <div className="relative">
-        <div className="h-5" aria-hidden />
+        <div className="h-7" aria-hidden />
 
         {/* the bar */}
         <div className="relative h-9 rounded-md overflow-hidden border border-[var(--line)] bg-[var(--card)] shadow-[inset_0_1px_2px_rgba(58,40,16,0.12)]">
@@ -105,8 +121,9 @@ export function Timeline({ projection, now = new Date(), selectedPhase, onSelect
                 background: phaseColor[p.name],
                 color: fg,
                 opacity: dim ? 0.45 : 1,
-                // crisp divider between adjacent segments so proportions read clearly
-                borderRight: i < phases.length - 1 ? "1px solid rgba(58,40,16,0.28)" : undefined,
+                // crisp divider between adjacent segments so proportions read
+                // clearly and adjacent browns don't blur together
+                borderRight: i < phases.length - 1 ? "1px solid rgba(10,6,2,0.55)" : undefined,
                 filter: isSelected ? "brightness(1.15) saturate(1.1)" : undefined,
                 boxShadow: isSelected ? "inset 0 0 0 2.5px var(--accent-deep)" : undefined,
               };
@@ -160,14 +177,15 @@ export function Timeline({ projection, now = new Date(), selectedPhase, onSelect
         </div>
 
         {/* Today marker: a pill in the lane + a 2px line dropping through the bar,
-            one connected element at the current position (hard-left on day 0). */}
-        <div className="pointer-events-none absolute top-0 whitespace-nowrap" style={anchor(nowPct)}>
+            one connected element at the current position. The pill gets a small
+            edge inset at day 0 so it doesn't sit flush against the bar corner. */}
+        <div className="pointer-events-none absolute top-0 whitespace-nowrap" style={pillAnchor(nowPct)}>
           <span className="inline-flex items-center gap-1 rounded-full bg-[var(--ink)] px-2 py-0.5 text-[10px] font-bold leading-none text-[var(--card)] shadow">
             Today
           </span>
         </div>
-        <div className="pointer-events-none absolute w-0.5 bg-[var(--ink)]" style={{ top: "16px", bottom: 0, ...lineLeft(nowPct) }} aria-hidden />
-        <div className="pointer-events-none absolute h-1.5 w-1.5 rotate-45 bg-[var(--ink)]" style={{ top: "15px", ...lineLeft(nowPct) }} aria-hidden />
+        <div className="pointer-events-none absolute w-0.5 bg-[var(--ink)]" style={{ top: "22px", bottom: 0, ...lineLeft(nowPct) }} aria-hidden />
+        <div className="pointer-events-none absolute h-1.5 w-1.5 rotate-45 bg-[var(--ink)]" style={{ top: "21px", ...lineLeft(nowPct) }} aria-hidden />
       </div>
 
       {/* boundary ticks + dates */}
