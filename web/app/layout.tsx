@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Source_Serif_4 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { UnitsToggle } from "@/components/UnitsToggle";
-import { Torchlight } from "@/components/Torchlight";
+import { SceneProvider } from "@/components/Scene";
 import "./globals.css";
 
 // Display: Fraunces with its "old style" soft optical axes for an aged,
@@ -34,8 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body>
         <Analytics />
-        <div className="page-bg" aria-hidden />
-        <Torchlight />
+        <SceneProvider>
         <main className="max-w-5xl mx-auto px-5 py-9">
           <header className="mb-9">
             <div className="flex items-center justify-between gap-4">
@@ -60,6 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </header>
           {children}
         </main>
+        </SceneProvider>
       </body>
     </html>
   );

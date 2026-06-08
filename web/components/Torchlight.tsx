@@ -16,15 +16,25 @@ import { useEffect, useRef } from "react";
 // Flame anchors are recomputed each frame from the background's `cover`
 // transform, so they stay locked to the painted torches at every viewport size.
 
+// Both scene backgrounds share these source dimensions (so the cover transform
+// math is identical); only the torch anchors differ.
 const IMG_W = 1672;
 const IMG_H = 941;
 
+export type SceneName = "dungeon" | "cellar";
+
 // cx = flame centre, yCup = cup mouth (where flame emerges), hPaint = painted
-// flame height — all in source-image pixels.
-const TORCHES = [
-  { cx: 107, yCup: 550, hPaint: 120 },
-  { cx: 1557, yCup: 549, hPaint: 110 },
-];
+// flame height — all in source-image pixels, measured per background.
+const TORCH_SETS: Record<SceneName, { cx: number; yCup: number; hPaint: number }[]> = {
+  dungeon: [
+    { cx: 107, yCup: 550, hPaint: 120 },
+    { cx: 1557, yCup: 549, hPaint: 110 },
+  ],
+  cellar: [
+    { cx: 80, yCup: 400, hPaint: 108 },
+    { cx: 1585, yCup: 400, hPaint: 108 },
+  ],
+};
 
 // screen px per fire-pixel (chunkiness of the pixel-art fire)
 const PIX = 3;
@@ -47,10 +57,11 @@ interface TorchState {
   emit: number;
 }
 
-export function Torchlight() {
+export function Torchlight({ scene = "dungeon" }: { scene?: SceneName }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
+    const TORCHES = TORCH_SETS[scene];
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -265,7 +276,7 @@ export function Torchlight() {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
     };
-  }, []);
+  }, [scene]);
 
   return <canvas ref={canvasRef} className="torchlight-canvas" aria-hidden />;
 }

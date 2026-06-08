@@ -27,6 +27,7 @@ import { SpecSheet } from "@/components/SpecSheet";
 import { SpriteVessel } from "@/components/SpriteVessel";
 import { StylePicker } from "@/components/StylePicker";
 import { useUnits } from "@/components/UnitsToggle";
+import { useScene } from "@/components/Scene";
 
 const NITROGEN_OPTS: NitrogenNeed[] = ["low", "medium", "high"];
 
@@ -40,6 +41,8 @@ interface Props {
 const COMMON_SPICES = ["cinnamon", "vanilla bean", "orange peel", "clove", "ginger", "elderberry", "cayenne", "habanero"];
 
 export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batch" }: Props) {
+  // The batch form (new + edit) shows the cellar backdrop while it's open.
+  useScene("cellar");
   const [draft, setDraft] = useState<Mead>(() => initial ?? blankMead());
   const [unitSystem] = useUnits();
   const u = unitsFor(unitSystem);
