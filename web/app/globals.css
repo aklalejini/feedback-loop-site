@@ -39,22 +39,17 @@ body {
   background-color: var(--bg);
 }
 
-/* Torchlit stone hall. The dungeon is a position:fixed ELEMENT (not a fixed CSS
-   background) so it shares the exact same positioning behaviour as the fire
-   canvas — including during trackpad overscroll / rubber-band — and the flames
-   never decouple from the painted torches. A soft dark scrim deepens it and
-   keeps light text legible over the brickwork. */
+/* Scene backdrop (dungeon by default, cellar on the batch form). A position:fixed
+   ELEMENT — not a fixed CSS background — so it shares the exact same positioning
+   behaviour as the fire canvas (including during trackpad overscroll) and the
+   flames never decouple from the painted torches. The image + scrim are set
+   inline per scene (see Scene.tsx). */
 .page-bg {
   position: fixed;
   inset: 0;
   z-index: -2;
   pointer-events: none;
-  background:
-    linear-gradient(rgba(12, 9, 5, 0.34), rgba(12, 9, 5, 0.32)),
-    url("/bg-dungeon.png");
-  background-position: center top, center top;
-  background-size: cover, cover;
-  background-repeat: no-repeat, no-repeat;
+  background-color: var(--bg);
 }
 
 h1, h2, h3, h4 {
