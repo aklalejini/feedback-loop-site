@@ -6,6 +6,8 @@ import {
   type AdditionStatus,
 } from "@/lib/nutrients";
 import type { Mead } from "@/lib/mead";
+import { AFFILIATE_NUTRIENTS } from "@/lib/affiliate";
+import { BuyLink } from "@/components/BuyLink";
 
 interface Props {
   mead: Mead;
@@ -61,6 +63,11 @@ export function NutrientSchedule({ mead, interactive = false, done = [], onToggl
         <span className="text-[var(--muted)]"> · </span>
         {schedule.perAdditionGrams.toFixed(1)} g × {schedule.additions.length}
       </p>
+
+      <div className="flex flex-wrap gap-x-4 gap-y-1 -mt-1">
+        <BuyLink item={AFFILIATE_NUTRIENTS[0]} text="Buy Fermaid-O ↗" />
+        <BuyLink item={AFFILIATE_NUTRIENTS[2]} text="+ Go-Ferm ↗" />
+      </div>
 
       {/* column headers */}
       <div

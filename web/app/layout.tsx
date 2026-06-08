@@ -81,12 +81,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <a href="/yeast" className="no-underline text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
                   Yeast guide
                 </a>
+                <a href="/gear" className="no-underline text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
+                  Gear
+                </a>
                 <UnitsToggle />
               </nav>
             </div>
             <div className="divider mt-4" />
           </header>
           {children}
+          <footer className="mt-16 pt-6 border-t border-[var(--line)] text-xs text-[var(--muted)] flex flex-wrap gap-x-6 gap-y-2 items-baseline">
+            <span>© Meadbook</span>
+            <a href="/yeast" className="no-underline hover:underline">Yeast guide</a>
+            <a href="/gear" className="no-underline hover:underline">Gear list</a>
+            <span className="text-[var(--muted)]">Some product links are affiliate links — Meadbook may earn a small commission. Costs you nothing.</span>
+          </footer>
         </main>
         </SceneProvider>
       </body>

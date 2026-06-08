@@ -28,6 +28,8 @@ import { SpriteVessel } from "@/components/SpriteVessel";
 import { StylePicker } from "@/components/StylePicker";
 import { useUnits } from "@/components/UnitsToggle";
 import { useScene } from "@/components/Scene";
+import { BuyLink } from "@/components/BuyLink";
+import { AFFILIATE_HONEY, AFFILIATE_HYDROMETER, AFFILIATE_JUICE, AFFILIATE_NUTRIENTS, AFFILIATE_SPICE, AFFILIATE_VESSEL, AFFILIATE_YEAST } from "@/lib/affiliate";
 
 const NITROGEN_OPTS: NitrogenNeed[] = ["low", "medium", "high"];
 
@@ -207,6 +209,9 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
                 </button>
               ))}
             </div>
+            <div className="mt-1">
+              <BuyLink item={AFFILIATE_VESSEL[draft.vessel]} text={`Buy this ${VESSELS[draft.vessel].label.toLowerCase()} ↗`} />
+            </div>
           </Field>
 
           {/* Style + target-sweetness picker — backward-designs the recipe at
@@ -245,6 +250,9 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
               ))}
             </div>
             <p className="text-xs text-[var(--muted)] mt-1">{HONEYS[draft.honeyType].note}</p>
+            <div className="mt-1">
+              <BuyLink item={AFFILIATE_HONEY[draft.honeyType]} />
+            </div>
           </Field>
 
           {/* Juice picker (optional — for melomels) */}
@@ -276,9 +284,14 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
               ))}
             </div>
             {draft.juiceType ? (
-              <p className="text-xs text-[var(--muted)] mt-1">
-                {JUICES[draft.juiceType].note} <span className="text-[var(--ink-soft)]">≈ {JUICES[draft.juiceType].typicalBrix}° Brix typical</span>
-              </p>
+              <>
+                <p className="text-xs text-[var(--muted)] mt-1">
+                  {JUICES[draft.juiceType].note} <span className="text-[var(--ink-soft)]">≈ {JUICES[draft.juiceType].typicalBrix}° Brix typical</span>
+                </p>
+                <div className="mt-1">
+                  <BuyLink item={AFFILIATE_JUICE[draft.juiceType]} />
+                </div>
+              </>
             ) : (
               <p className="text-xs text-[var(--muted)] mt-1">Substitute or supplement water with juice to make a melomel.</p>
             )}
@@ -352,6 +365,9 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
                 </button>
               ))}
             </div>
+            <div className="mt-1">
+              <BuyLink item={AFFILIATE_YEAST[draft.yeast]} />
+            </div>
           </Field>
 
           {/* Yeast nitrogen need (drives the nutrient schedule) */}
@@ -372,6 +388,10 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             <p className="text-xs text-[var(--muted)] mt-1">
               Defaults from the yeast; adjust if you know its demand.
             </p>
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+              <BuyLink item={AFFILIATE_NUTRIENTS[0]} text="Buy Fermaid-O ↗" />
+              <BuyLink item={AFFILIATE_NUTRIENTS[2]} text="Buy Go-Ferm ↗" />
+            </div>
           </Field>
 
           {/* Measured OG (optional override) */}
@@ -407,6 +427,10 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             <p className="text-xs text-[var(--muted)] mt-1">
               A hydrometer reading of your must overrides the recipe estimate.
             </p>
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+              <BuyLink item={AFFILIATE_HYDROMETER[0]} text="Buy a triple-scale hydrometer ↗" />
+              <BuyLink item={AFFILIATE_HYDROMETER[1]} text="+ test jar ↗" />
+            </div>
           </Field>
 
           {/* Spices */}
@@ -432,6 +456,16 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
               }
               placeholder="or type your own, comma-separated"
             />
+            {draft.spices.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                {draft.spices
+                  .map((s) => ({ s, item: AFFILIATE_SPICE[s.toLowerCase()] }))
+                  .filter((x) => x.item)
+                  .map(({ s, item }) => (
+                    <BuyLink key={s} item={item} text={`Buy ${item!.label.toLowerCase()} ↗`} />
+                  ))}
+              </div>
+            ) : null}
           </Field>
         </div>
       </div>

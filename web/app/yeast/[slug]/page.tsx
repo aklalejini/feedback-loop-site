@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SITE_URL } from "@/lib/site";
 import { allYeastSlugs, getYeastProfile, YEAST_PROFILES } from "@/lib/knowledge/yeasts";
+import { AFFILIATE_YEAST_BY_SLUG } from "@/lib/affiliate";
+import { BuyLink } from "@/components/BuyLink";
 
 export function generateStaticParams() {
   return allYeastSlugs().map((slug) => ({ slug }));
@@ -52,6 +54,12 @@ export default function YeastDetailPage({ params }: { params: { slug: string } }
         <Spec label="Alcohol tolerance" value={y.alcoholTolerance} />
         <Spec label="Nitrogen" value={y.nitrogen} />
       </section>
+
+      {AFFILIATE_YEAST_BY_SLUG[y.slug] ? (
+        <section className="pixel-card-sm p-4">
+          <BuyLink item={AFFILIATE_YEAST_BY_SLUG[y.slug]} variant="row" />
+        </section>
+      ) : null}
 
       <section className="grid gap-2">
         <h2 className="text-2xl font-display">Flavor &amp; best uses</h2>
