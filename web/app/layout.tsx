@@ -3,6 +3,7 @@ import { Fraunces, Source_Serif_4 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { UnitsToggle } from "@/components/UnitsToggle";
 import { SceneProvider } from "@/components/Scene";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 // Display: Fraunces with its "old style" soft optical axes for an aged,
@@ -23,10 +24,38 @@ const body = Source_Serif_4({
   display: "swap",
 });
 
+const TITLE = "Meadbook — design and track your mead";
+const DESCRIPTION =
+  "Design a mead batch, watch a projected fermentation timeline unfold, and log observations as it progresses. Free, private, runs in your browser.";
+
 export const metadata: Metadata = {
-  title: "Meadbook — design and track your batch",
-  description:
-    "Design a virtual mead batch, see a projected fermentation timeline, and update it as fermentation progresses.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: TITLE,
+    template: "%s · Meadbook",
+  },
+  description: DESCRIPTION,
+  applicationName: SITE_NAME,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    url: SITE_URL,
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Meadbook" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/og-image.png"],
+  },
+  // Optional: paste the Search Console "HTML tag" code into this env var if you
+  // verify by meta tag instead of DNS. No-op when unset.
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : undefined,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
