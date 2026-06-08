@@ -9,8 +9,8 @@
   /* Warm off-white inks at higher contrast so body text reads intentional on
      the near-black stone (not murky mid-brown). */
   --ink: #f3ead6;
-  --ink-soft: #e8dcc4;
-  --muted: #b6a684;
+  --ink-soft: #ecdfc7;
+  --muted: #cbbb91;
   --line: #4c4131;
   --line-soft: #322a20;
   /* panels are dark, slightly translucent stone so the wall reads behind them */
@@ -62,6 +62,12 @@ h1, h2, h3, h4 {
 }
 /* headings sit directly on the stone, so give them a subtle shadow for crispness */
 h1, h2 { text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55); }
+
+/* Body copy that sits directly on the wall (not inside a card) needs a soft
+   shadow too — otherwise it competes with the brick texture even at AA contrast. */
+.text-on-wall {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
+}
 
 a { color: var(--green); text-underline-offset: 2px; }
 a:hover { text-decoration: underline; }
