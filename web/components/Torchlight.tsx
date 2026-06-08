@@ -31,10 +31,8 @@ const TORCH_SETS: Record<SceneName, { cx: number; yCup: number; hPaint: number }
     { cx: 1557, yCup: 549, hPaint: 110 },
   ],
   cellar: [
-    { cx: 80, yCup: 400, hPaint: 108 },
-    // the painted flame on the right sconce leans right of its holder, so anchor
-    // to the holder cup (not the flame) to keep the fire seated on the torch
-    { cx: 1570, yCup: 400, hPaint: 108 },
+    { cx: 80, yCup: 408, hPaint: 108 },
+    { cx: 1582, yCup: 408, hPaint: 108 },
   ],
 };
 
