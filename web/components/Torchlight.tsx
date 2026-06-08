@@ -31,8 +31,8 @@ const TORCH_SETS: Record<SceneName, { cx: number; yCup: number; hPaint: number }
     { cx: 1557, yCup: 549, hPaint: 110 },
   ],
   cellar: [
-    { cx: 82, yCup: 408, hPaint: 108 },
-    { cx: 1585, yCup: 408, hPaint: 108 },
+    { cx: 82, yCup: 412, hPaint: 90 },
+    { cx: 1585, yCup: 412, hPaint: 90 },
   ],
 };
 
