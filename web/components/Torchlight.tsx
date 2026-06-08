@@ -31,8 +31,8 @@ const TORCH_SETS: Record<SceneName, { cx: number; yCup: number; hPaint: number }
     { cx: 1557, yCup: 549, hPaint: 110 },
   ],
   cellar: [
-    { cx: 80, yCup: 408, hPaint: 108 },
-    { cx: 1582, yCup: 408, hPaint: 108 },
+    { cx: 82, yCup: 408, hPaint: 108 },
+    { cx: 1585, yCup: 408, hPaint: 108 },
   ],
 };
 
@@ -80,8 +80,12 @@ export function Torchlight({ scene = "dungeon" }: { scene?: SceneName }) {
 
     function resize() {
       dpr = Math.max(1, window.devicePixelRatio || 1);
-      vw = window.innerWidth;
-      vh = window.innerHeight;
+      // Use the layout viewport (excludes the scrollbar) so this matches the
+      // .page-bg element's `cover` sizing exactly — otherwise the fire drifts
+      // from the painted torches by the scrollbar width, worst at the right edge.
+      const doc = document.documentElement;
+      vw = doc.clientWidth;
+      vh = doc.clientHeight;
       canvas!.style.width = vw + "px";
       canvas!.style.height = vh + "px";
       canvas!.width = Math.floor(vw * dpr);
@@ -257,6 +261,10 @@ export function Torchlight({ scene = "dungeon" }: { scene?: SceneName }) {
     const loop = (now: number) => {
       const dt = Math.min(0.05, (now - prev) / 1000);
       prev = now;
+      // a scrollbar appearing/disappearing changes clientWidth without firing a
+      // resize event — re-sync so the fire stays locked to the background.
+      const doc = document.documentElement;
+      if (doc.clientWidth !== vw || doc.clientHeight !== vh) resize();
       frame(now / 1000, dt);
       raf = requestAnimationFrame(loop);
     };
