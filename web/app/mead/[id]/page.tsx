@@ -18,6 +18,19 @@ export default function MeadDetailPage() {
   const [mead, setMead] = useState<Mead | null | undefined>(undefined);
   const [editing, setEditing] = useState(false);
   const [previewPhase, setPreviewPhase] = useState<PhaseName | null>(null);
+  // Vessel size: BIG on mobile (own row, fills most of the viewport) so the
+  // fermentation animation actually reads at arm's length; modest on desktop
+  // where it shares the row with the spec sheet.
+  const [vesselSize, setVesselSize] = useState(200);
+  useEffect(() => {
+    const update = () => {
+      const vw = window.innerWidth;
+      setVesselSize(vw >= 640 ? 200 : Math.min(vw - 64, 320));
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   useEffect(() => {
     const id = params?.id;
@@ -134,7 +147,7 @@ export default function MeadDetailPage() {
             juiceL={mead.juiceL}
             liters={mead.waterL + (mead.juiceL ?? 0) + mead.honeyKg * 0.7}
             phase={previewPhase ?? proj.currentPhase}
-            size={150}
+            size={vesselSize}
           />
         </div>
         <div className="grid gap-4">
