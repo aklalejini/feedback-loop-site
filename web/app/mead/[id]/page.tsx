@@ -10,7 +10,7 @@ import { Timeline } from "@/components/Timeline";
 import { SpriteVessel } from "@/components/SpriteVessel";
 import { events } from "@/lib/analytics";
 import { deleteMead, getMead, upsertMead } from "@/lib/storage";
-import { fermentationRisks, project, YEASTS, type Mead, type Observation, type PhaseName } from "@/lib/mead";
+import { fermentationRisks, PHASE_DESCRIPTION, project, YEASTS, type Mead, type Observation, type PhaseName } from "@/lib/mead";
 
 export default function MeadDetailPage() {
   const params = useParams<{ id: string }>();
@@ -170,21 +170,28 @@ export default function MeadDetailPage() {
             selectedPhase={previewPhase}
             onSelectPhase={setPreviewPhase}
           />
-          <p className="text-xs text-[var(--muted)]">
-            Timeline is an estimate — confirm completion with a stable gravity reading over several
-            days, not the calendar or airlock activity. Don&apos;t backsweeten or bottle a sweet mead
-            until fermentation is stable and (if needed) chemically stabilized.
-          </p>
           {previewPhase ? (
-            <button
-              type="button"
-              onClick={() => setPreviewPhase(null)}
-              className="justify-self-start text-xs underline text-[var(--muted)] hover:text-[var(--ink)]"
-            >
-              ← back to now
-            </button>
+            <>
+              <p className="text-xs text-[var(--ink-soft)] leading-relaxed">
+                {PHASE_DESCRIPTION[previewPhase]}
+              </p>
+              <button
+                type="button"
+                onClick={() => setPreviewPhase(null)}
+                className="justify-self-start text-xs underline text-[var(--muted)] hover:text-[var(--ink)]"
+              >
+                ← back to now
+              </button>
+            </>
           ) : (
-            <p className="text-xs text-[var(--muted)]">Tip: click a phase above to preview the vessel at that point.</p>
+            <>
+              <p className="text-xs text-[var(--muted)]">
+                Timeline is an estimate — confirm completion with a stable gravity reading over several
+                days, not the calendar or airlock activity. Don&apos;t backsweeten or bottle a sweet mead
+                until fermentation is stable and (if needed) chemically stabilized.
+              </p>
+              <p className="text-xs text-[var(--muted)]">Tip: click a phase above to preview the vessel at that point.</p>
+            </>
           )}
         </div>
       </section>

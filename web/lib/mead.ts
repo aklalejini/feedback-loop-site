@@ -7,6 +7,21 @@ export type VesselKind = "jar-1gal" | "jug-1gal" | "jug-5gal" | "bucket-5gal";
 export type PhaseName = "lag" | "primary" | "secondary" | "conditioning" | "done";
 export type NitrogenNeed = "low" | "medium" | "high";
 
+// One-sentence "what's happening" for each fermentation phase, surfaced when
+// the maker previews a phase on the timeline. Plain-spoken, no marketing.
+export const PHASE_DESCRIPTION: Record<PhaseName, string> = {
+  lag:
+    "Yeast wakes up and builds its colony. It can look quiet for a day or two before bubbling starts — that's normal.",
+  primary:
+    "The most active fermentation. Yeast burns through the bulk of the sugar — steady airlock bubbling, krausen foam on top, and the fastest gravity drop.",
+  secondary:
+    "Fermentation slows as the easy sugars run out. Fewer bubbles, yeast starts to settle, and the must begins to clear.",
+  conditioning:
+    "Quiet aging. Harsh flavors mellow, yeast finishes cleaning up after itself, and gravity should be stable. Patience pays off here.",
+  done:
+    "Stable and ready. Confirm with a steady gravity reading over several days before bottling or backsweetening.",
+};
+
 // Common juices for melomels. Brix sourced from typical food-composition values;
 // these are estimates — measured OG always wins for accuracy (docs/research:
 // "Prefer Measured OG"). Values reflect 100% unsweetened juice.
