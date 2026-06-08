@@ -24,7 +24,7 @@ const body = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: "Mead Book — design and track your batch",
+  title: "Meadbook — design and track your batch",
   description:
     "Design a virtual mead batch, see a projected fermentation timeline, and update it as fermentation progresses.",
 };
@@ -39,14 +39,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="max-w-5xl mx-auto px-5 py-9">
           <header className="mb-9">
             <div className="flex items-center justify-between gap-4">
-              <a href="/" className="inline-flex items-center no-underline" aria-label="Mead Book — home">
+              <a href="/" className="inline-flex items-center no-underline" aria-label="Meadbook — home">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/meadbook-logo.png"
-                  alt="Mead Book"
-                  width={120}
-                  height={58}
-                  className="h-12 sm:h-14 w-auto"
+                  alt="Meadbook"
+                  width={183}
+                  height={52}
+                  className="h-11 sm:h-12 w-auto"
                 />
               </a>
               <nav className="flex items-center gap-3 text-sm">
