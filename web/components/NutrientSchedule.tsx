@@ -65,8 +65,8 @@ export function NutrientSchedule({ mead, interactive = false, done = [], onToggl
       </p>
 
       <div className="flex flex-wrap gap-x-4 gap-y-1 -mt-1">
-        <BuyLink item={AFFILIATE_NUTRIENTS[0]} text="Buy Fermaid-O ↗" />
-        <BuyLink item={AFFILIATE_NUTRIENTS[2]} text="+ Go-Ferm ↗" />
+        <BuyLink item={AFFILIATE_NUTRIENTS[0]} text="Buy Fermaid-O" />
+        <BuyLink item={AFFILIATE_NUTRIENTS[2]} text="+ Go-Ferm" />
       </div>
 
       {/* column headers */}
