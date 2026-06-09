@@ -495,6 +495,22 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
         )}
       </div>
 
+      {/* Things every batch needs that the form doesn't itself ask for — kept
+          up by the recipe/spec sheet so they're seen while planning, not buried
+          at the bottom. Sanitiser is the most-overlooked, hence first. */}
+      <div className="grid gap-2">
+        <p className="eyebrow text-[var(--ink-soft)]">Don&apos;t forget for brew day</p>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <BuyLink item={AFFILIATE_SANITIZER[0]} text="Buy Star San (sanitiser) ↗" />
+          <BuyLink item={AFFILIATE_AIRLOCK[0]} text="Buy 3-piece airlock ↗" />
+          <BuyLink item={AFFILIATE_TRANSFER[1]} text="Buy funnel + strainer ↗" />
+          <BuyLink item={AFFILIATE_TRANSFER[0]} text="Buy auto-siphon (for racking) ↗" />
+        </div>
+        <p className="text-[11px] text-[var(--muted)]">
+          <a href="/gear" className="underline">See the full gear list →</a>
+        </p>
+      </div>
+
       {!isEmpty ? (
         <div className="border-t border-[var(--line)] pt-4">
           <NutrientSchedule mead={draft} />
@@ -511,22 +527,6 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             </p>
           ))
         : null}
-
-      {/* Things every batch needs that the form doesn't itself ask for —
-          surfaced after the recipe is shaped, just before saving. Sanitiser is
-          the most-overlooked of these, hence first. */}
-      <div className="border-t border-[var(--line)] pt-4 grid gap-2">
-        <p className="eyebrow text-[var(--ink-soft)]">Don&apos;t forget for brew day</p>
-        <div className="flex flex-wrap gap-x-4 gap-y-1">
-          <BuyLink item={AFFILIATE_SANITIZER[0]} text="Buy Star San (sanitiser) ↗" />
-          <BuyLink item={AFFILIATE_AIRLOCK[0]} text="Buy 3-piece airlock ↗" />
-          <BuyLink item={AFFILIATE_TRANSFER[1]} text="Buy funnel + strainer ↗" />
-          <BuyLink item={AFFILIATE_TRANSFER[0]} text="Buy auto-siphon (for racking) ↗" />
-        </div>
-        <p className="text-[11px] text-[var(--muted)]">
-          <a href="/gear" className="underline">See the full gear list →</a>
-        </p>
-      </div>
 
       <div className="flex gap-3 justify-end">
         {onCancel ? (
