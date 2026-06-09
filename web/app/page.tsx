@@ -16,9 +16,20 @@ export default function HomePage() {
   const router = useRouter();
   const [meads, setMeads] = useState<Mead[]>([]);
   const [creating, setCreating] = useState(false);
+  // Batch-list vessel size: bigger on desktop so the fermentation animation
+  // (bubbles, foam, level) actually reads; compact on mobile where the row
+  // stacks vertically.
+  const [vesselSize, setVesselSize] = useState(120);
 
   useEffect(() => {
     setMeads(loadMeads());
+  }, []);
+
+  useEffect(() => {
+    const update = () => setVesselSize(window.innerWidth >= 640 ? 168 : 132);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
   function handleSubmit(mead: Mead) {
@@ -111,7 +122,7 @@ export default function HomePage() {
         {meads.length > 0 ? (
           <ul className="grid gap-3">
             {meads.map((m) => (
-              <BatchRow key={m.id} mead={m} />
+              <BatchRow key={m.id} mead={m} vesselSize={vesselSize} />
             ))}
           </ul>
         ) : null}
@@ -124,13 +135,13 @@ export default function HomePage() {
 // phase's animation on the (now larger) vessel; the vessel and timeline live
 // side by side as siblings so the timeline's hover targets aren't nested inside
 // the navigating link.
-function BatchRow({ mead: m }: { mead: Mead }) {
+function BatchRow({ mead: m, vesselSize }: { mead: Mead; vesselSize: number }) {
   const [hoverPhase, setHoverPhase] = useState<PhaseName | null>(null);
   const proj = project(m);
   const ageDays = Math.floor((Date.now() - new Date(m.createdAt).getTime()) / 86400000);
   const displayPhase = hoverPhase ?? proj.currentPhase;
   return (
-    <li className="pixel-card p-4 grid sm:grid-cols-[124px,minmax(0,200px),minmax(0,1fr)] gap-4 sm:gap-6 items-center transition-transform hover:-translate-y-0.5">
+    <li className="pixel-card p-4 grid sm:grid-cols-[184px,minmax(0,1fr),minmax(0,1.7fr)] gap-4 sm:gap-6 items-center transition-transform hover:-translate-y-0.5">
       <Link href={`/mead/${m.id}`} className="block mx-auto sm:mx-0" aria-label={`Open ${m.name}`}>
         <SpriteVessel
           vessel={m.vessel}
@@ -139,13 +150,13 @@ function BatchRow({ mead: m }: { mead: Mead }) {
           juiceL={m.juiceL}
           liters={m.waterL + (m.juiceL ?? 0) + m.honeyKg * 0.7}
           phase={displayPhase}
-          size={120}
+          size={vesselSize}
           animated
         />
       </Link>
       <Link href={`/mead/${m.id}`} className="grid gap-0.5 min-w-0 no-underline text-[var(--ink)]">
-        <h3 className="font-display text-xl leading-tight truncate">{m.name}</h3>
-        <p className="text-xs text-[var(--muted)] truncate">
+        <h3 className="font-display text-xl leading-tight text-balance">{m.name}</h3>
+        <p className="text-xs text-[var(--muted)]">
           {HONEYS[m.honeyType].label} · {VESSELS[m.vessel].label} · {m.yeast}
         </p>
         <p className="text-xs mt-1">
