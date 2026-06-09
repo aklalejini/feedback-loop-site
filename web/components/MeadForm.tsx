@@ -155,7 +155,7 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
         // edit so existing brewers aren't pestered.
         <p className="text-xs text-[var(--ink-soft)] flex items-baseline gap-2 flex-wrap">
           <span className="text-[var(--muted)]">First batch?</span>
-          <BuyLink item={AFFILIATE_KITS[0]} text="Get a 1-gallon starter kit (vessel, airlock, hydrometer, ingredients) ↗" />
+          <BuyLink item={AFFILIATE_KITS[0]} text="Get a 1-gallon starter kit (vessel, airlock, hydrometer, ingredients)" />
         </p>
       ) : null}
       <div className="grid sm:grid-cols-[180px,1fr] gap-6 items-start">
@@ -218,7 +218,7 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
               ))}
             </div>
             <div className="mt-1">
-              <BuyLink item={AFFILIATE_VESSEL[draft.vessel]} text={`Buy this ${VESSELS[draft.vessel].label.toLowerCase()} ↗`} />
+              <BuyLink item={AFFILIATE_VESSEL[draft.vessel]} text={`Buy this ${VESSELS[draft.vessel].label.toLowerCase()}`} />
             </div>
           </Field>
 
@@ -397,8 +397,8 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
               Defaults from the yeast; adjust if you know its demand.
             </p>
             <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
-              <BuyLink item={AFFILIATE_NUTRIENTS[0]} text="Buy Fermaid-O ↗" />
-              <BuyLink item={AFFILIATE_NUTRIENTS[2]} text="Buy Go-Ferm ↗" />
+              <BuyLink item={AFFILIATE_NUTRIENTS[0]} text="Buy Fermaid-O" />
+              <BuyLink item={AFFILIATE_NUTRIENTS[2]} text="Buy Go-Ferm" />
             </div>
           </Field>
 
@@ -436,8 +436,8 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
               A hydrometer reading of your must overrides the recipe estimate.
             </p>
             <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
-              <BuyLink item={AFFILIATE_HYDROMETER[0]} text="Buy a triple-scale hydrometer ↗" />
-              <BuyLink item={AFFILIATE_HYDROMETER[1]} text="+ test jar ↗" />
+              <BuyLink item={AFFILIATE_HYDROMETER[0]} text="Buy a triple-scale hydrometer" />
+              <BuyLink item={AFFILIATE_HYDROMETER[1]} text="+ test jar" />
             </div>
           </Field>
 
@@ -470,7 +470,7 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
                   .map((s) => ({ s, item: AFFILIATE_SPICE[s.toLowerCase()] }))
                   .filter((x) => x.item)
                   .map(({ s, item }) => (
-                    <BuyLink key={s} item={item} text={`Buy ${item!.label.toLowerCase()} ↗`} />
+                    <BuyLink key={s} item={item} text={`Buy ${item!.label.toLowerCase()}`} />
                   ))}
               </div>
             ) : null}
@@ -501,10 +501,10 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
       <div className="grid gap-2">
         <p className="eyebrow text-[var(--ink-soft)]">Don&apos;t forget for brew day</p>
         <div className="flex flex-wrap gap-x-4 gap-y-1">
-          <BuyLink item={AFFILIATE_SANITIZER[0]} text="Buy Star San (sanitiser) ↗" />
-          <BuyLink item={AFFILIATE_AIRLOCK[0]} text="Buy 3-piece airlock ↗" />
-          <BuyLink item={AFFILIATE_TRANSFER[1]} text="Buy funnel + strainer ↗" />
-          <BuyLink item={AFFILIATE_TRANSFER[0]} text="Buy auto-siphon (for racking) ↗" />
+          <BuyLink item={AFFILIATE_SANITIZER[0]} text="Buy Star San (sanitiser)" />
+          <BuyLink item={AFFILIATE_AIRLOCK[0]} text="Buy 3-piece airlock" />
+          <BuyLink item={AFFILIATE_TRANSFER[1]} text="Buy funnel + strainer" />
+          <BuyLink item={AFFILIATE_TRANSFER[0]} text="Buy auto-siphon (for racking)" />
         </div>
         <p className="text-[11px] text-[var(--muted)]">
           <a href="/gear" className="underline">See the full gear list →</a>
