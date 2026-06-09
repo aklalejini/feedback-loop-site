@@ -29,7 +29,7 @@ import { StylePicker } from "@/components/StylePicker";
 import { useUnits } from "@/components/UnitsToggle";
 import { useScene } from "@/components/Scene";
 import { BuyLink } from "@/components/BuyLink";
-import { AFFILIATE_HONEY, AFFILIATE_HYDROMETER, AFFILIATE_JUICE, AFFILIATE_NUTRIENTS, AFFILIATE_SPICE, AFFILIATE_VESSEL, AFFILIATE_YEAST } from "@/lib/affiliate";
+import { AFFILIATE_AIRLOCK, AFFILIATE_HONEY, AFFILIATE_HYDROMETER, AFFILIATE_JUICE, AFFILIATE_KITS, AFFILIATE_NUTRIENTS, AFFILIATE_SANITIZER, AFFILIATE_SPICE, AFFILIATE_TRANSFER, AFFILIATE_VESSEL, AFFILIATE_YEAST } from "@/lib/affiliate";
 
 const NITROGEN_OPTS: NitrogenNeed[] = ["low", "medium", "high"];
 
@@ -150,6 +150,14 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
         onSubmit(draft);
       }}
     >
+      {!initial ? (
+        // New batches only: a one-line nudge for first-time brewers. Hidden on
+        // edit so existing brewers aren't pestered.
+        <p className="text-xs text-[var(--ink-soft)] flex items-baseline gap-2 flex-wrap">
+          <span className="text-[var(--muted)]">First batch?</span>
+          <BuyLink item={AFFILIATE_KITS[0]} text="Get a 1-gallon starter kit (vessel, airlock, hydrometer, ingredients) ↗" />
+        </p>
+      ) : null}
       <div className="grid sm:grid-cols-[180px,1fr] gap-6 items-start">
         {/* live pixel preview */}
         <div className="mx-auto sm:mx-0 sm:sticky sm:top-4 text-center">
@@ -503,6 +511,22 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             </p>
           ))
         : null}
+
+      {/* Things every batch needs that the form doesn't itself ask for —
+          surfaced after the recipe is shaped, just before saving. Sanitiser is
+          the most-overlooked of these, hence first. */}
+      <div className="border-t border-[var(--line)] pt-4 grid gap-2">
+        <p className="eyebrow text-[var(--ink-soft)]">Don&apos;t forget for brew day</p>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <BuyLink item={AFFILIATE_SANITIZER[0]} text="Buy Star San (sanitiser) ↗" />
+          <BuyLink item={AFFILIATE_AIRLOCK[0]} text="Buy 3-piece airlock ↗" />
+          <BuyLink item={AFFILIATE_TRANSFER[1]} text="Buy funnel + strainer ↗" />
+          <BuyLink item={AFFILIATE_TRANSFER[0]} text="Buy auto-siphon (for racking) ↗" />
+        </div>
+        <p className="text-[11px] text-[var(--muted)]">
+          <a href="/gear" className="underline">See the full gear list →</a>
+        </p>
+      </div>
 
       <div className="flex gap-3 justify-end">
         {onCancel ? (

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { MeadForm } from "@/components/MeadForm";
 import { SpriteVessel } from "@/components/SpriteVessel";
 import { Timeline } from "@/components/Timeline";
+import { BuyLink } from "@/components/BuyLink";
+import { AFFILIATE_KITS } from "@/lib/affiliate";
 import { events } from "@/lib/analytics";
 import { buildSampleMead, SAMPLES, type SampleSpec } from "@/lib/samples";
 import { loadMeads, upsertMead } from "@/lib/storage";
@@ -97,6 +99,12 @@ export default function HomePage() {
                 </li>
               ))}
             </ul>
+            {/* Beginners loading a sample: a one-line nudge for the kit. Sits
+                under the grid so it never blocks the planner samples themselves. */}
+            <p className="text-xs text-[var(--muted)] flex items-baseline gap-2 flex-wrap pt-1">
+              <span>No gear yet?</span>
+              <BuyLink item={AFFILIATE_KITS[0]} text="A 1-gallon starter kit covers your first batch ↗" />
+            </p>
           </div>
         ) : null}
 
