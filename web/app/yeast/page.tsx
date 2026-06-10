@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE_URL } from "@/lib/site";
 import { YEAST_PROFILES } from "@/lib/knowledge/yeasts";
+import { Ornament } from "@/components/Ornament";
 
 const TITLE = "Mead yeast guide — strains, temperature, and alcohol tolerance";
 const DESCRIPTION =
@@ -25,6 +26,8 @@ export default function YeastIndexPage() {
           profiles are drawn from manufacturer data — more strains are being added as they&apos;re sourced.
         </p>
       </section>
+
+      <Ornament />
 
       <ul className="grid sm:grid-cols-2 gap-3">
         {YEAST_PROFILES.map((y) => (

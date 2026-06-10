@@ -3,24 +3,24 @@
 @tailwind utilities;
 
 :root {
-  /* Dark "torchlit dungeon" theme — light warm ink on dark stone, amber torch
-     accents that echo the wall sconces. */
+  /* Torchlit cellar: near-black stone, warm parchment ink, amber torchlight,
+     and a soft bottle-glass green pulled from the vessel art. */
   --bg: #14110b;
-  /* Warm off-white inks at higher contrast so body text reads intentional on
-     the near-black stone (not murky mid-brown). */
   --ink: #f3ead6;
   --ink-soft: #ecdfc7;
   --muted: #cbbb91;
-  --line: #4c4131;
+  --line: #52452f;
   --line-soft: #322a20;
+  --gold-hairline: rgba(255, 215, 150, 0.05);
   /* panels are dark, slightly translucent stone so the wall reads behind them */
   --card: rgba(32, 27, 19, 0.9);
   --card-2: rgba(45, 38, 26, 0.92);
   --accent: #d98a2b;
   --accent-deep: #a5641a;
   --accent-glow: #f3ad49;
-  --green: #7cc3a6;
-  --green-deep: #5fa98a;
+  --green: #a9c6b0;
+  --green-deep: #7ea98d;
+  --parchment: #e9dcbe;
   /* status colours tuned for dark backgrounds */
   --warn: #f0b65c;
   --warn-bg: rgba(120, 80, 22, 0.24);
@@ -32,12 +32,23 @@
 
 html, body {
   color: var(--ink);
-  font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body), ui-serif, Georgia, serif;
 }
 
 body {
   background-color: var(--bg);
 }
+
+/* The small details browsers default on — these carry as much "someone made
+   this" as any illustration. */
+::selection { background: var(--accent-deep); color: #1a1006; }
+html { scrollbar-color: #3d3322 transparent; scrollbar-width: thin; }
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3d3322; border: 3px solid var(--bg); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #57462e; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input, textarea { caret-color: var(--accent); }
 
 /* Scene backdrop (dungeon by default, cellar on the batch form). A position:fixed
    ELEMENT — not a fixed CSS background — so it shares the exact same positioning
@@ -55,13 +66,21 @@ body {
 h1, h2, h3, h4 {
   font-family: var(--font-display), ui-serif, Georgia, serif;
   color: var(--ink);
-  /* Fraunces "old style": let optical sizing scale with the heading size and
-     soften the terminals for an aged, handmade feel. */
+  /* Fraunces "old style": optical sizing + soft terminals for an aged,
+     handmade feel. */
   font-optical-sizing: auto;
   font-variation-settings: "SOFT" 60, "WONK" 0;
+  text-wrap: balance;
 }
 /* headings sit directly on the stone, so give them a subtle shadow for crispness */
 h1, h2 { text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55); }
+
+/* A single italic word inside a display heading — the hand-set touch. */
+.display-accent {
+  font-style: italic;
+  font-variation-settings: "SOFT" 80, "WONK" 1;
+  color: var(--accent-glow);
+}
 
 /* Body copy that sits directly on the wall (not inside a card) needs a soft
    shadow too — otherwise it competes with the brick texture even at AA contrast. */
@@ -69,8 +88,8 @@ h1, h2 { text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55); }
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
 }
 
-a { color: var(--green); text-underline-offset: 2px; }
-a:hover { text-decoration: underline; }
+a { color: var(--green); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { text-decoration: underline; color: var(--parchment); }
 
 button, input, select, textarea { font: inherit; }
 
@@ -80,8 +99,8 @@ button, input, select, textarea { font: inherit; }
 .eyebrow {
   font-family: var(--font-body);
   text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  font-size: 0.68rem;
   font-weight: 600;
   color: var(--accent-glow);
 }
@@ -90,6 +109,38 @@ button, input, select, textarea { font: inherit; }
 .divider {
   height: 1px;
   background: linear-gradient(90deg, var(--line) 0%, var(--line) 40%, transparent 100%);
+}
+
+/* Ornamental rule — a small diamond stud between two fading hairlines. Used
+   sparingly: under page heroes and above the footer. See Ornament.tsx. */
+.rule-ornament {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.rule-ornament::before,
+.rule-ornament::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+}
+.rule-ornament::before { background: linear-gradient(90deg, transparent, var(--line)); }
+.rule-ornament::after { background: linear-gradient(90deg, var(--line), transparent); }
+.rule-ornament .stud {
+  width: 7px;
+  height: 7px;
+  rotate: 45deg;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 8px -1px rgba(243, 173, 73, 0.5);
+  flex: none;
+}
+.rule-ornament .stud-side {
+  width: 3px;
+  height: 3px;
+  rotate: 45deg;
+  background: var(--accent-deep);
+  opacity: 0.7;
+  flex: none;
 }
 
 /* ---------- status banners (dark-friendly) ---------- */
@@ -105,66 +156,99 @@ button, input, select, textarea { font: inherit; }
 }
 
 /* ---------- surfaces ---------- */
+/* Framed like inlaid panels: a dark keyline outside the warm border, a faint
+   gold hairline just inside it, and a candle-glow gradient falling from the
+   upper left. */
 .pixel-card {
   background:
-    linear-gradient(180deg, rgba(255, 240, 214, 0.06), rgba(255, 240, 214, 0) 24%),
+    linear-gradient(180deg, rgba(255, 236, 200, 0.055), rgba(255, 236, 200, 0) 22%),
+    radial-gradient(130% 90% at 18% 0%, rgba(243, 173, 73, 0.05), transparent 55%),
+    var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  backdrop-filter: blur(2px);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 235, 200, 0.09),
+    inset 0 0 0 1px var(--gold-hairline),
+    0 18px 40px -22px rgba(0, 0, 0, 0.85),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.pixel-card-sm {
+  background:
+    linear-gradient(180deg, rgba(255, 236, 200, 0.04), rgba(255, 236, 200, 0) 30%),
     var(--card);
   border: 1px solid var(--line);
   border-radius: 8px;
   backdrop-filter: blur(2px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 235, 200, 0.08),
-    0 12px 28px -14px rgba(0, 0, 0, 0.75),
-    0 1px 2px rgba(0, 0, 0, 0.4);
-}
-.pixel-card-sm {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  backdrop-filter: blur(2px);
-  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 235, 200, 0.07),
-    0 6px 16px -10px rgba(0, 0, 0, 0.7);
+    inset 0 0 0 1px var(--gold-hairline),
+    0 8px 20px -12px rgba(0, 0, 0, 0.75);
 }
 
 /* ---------- selectable option cards ---------- */
 .opt {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 6px;
-  transition: transform 0.08s ease, box-shadow 0.08s ease, border-color 0.08s ease, background 0.08s ease;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 235, 200, 0.05);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, border-color 0.1s ease, background 0.1s ease;
   cursor: pointer;
 }
 .opt:hover {
-  border-color: var(--accent);
-  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.7);
+  border-color: var(--accent-deep);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 235, 200, 0.07),
+    0 0 14px -4px rgba(243, 173, 73, 0.25),
+    0 8px 18px -10px rgba(0, 0, 0, 0.7);
   transform: translateY(-1px);
 }
 .opt[aria-pressed="true"] {
   border-color: var(--accent);
-  background: var(--card-2);
-  box-shadow: 0 0 0 2px rgba(217, 138, 43, 0.4), 0 6px 16px -8px rgba(0, 0, 0, 0.65);
+  background:
+    linear-gradient(180deg, rgba(243, 173, 73, 0.07), rgba(243, 173, 73, 0) 40%),
+    var(--card-2);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 0 0 2px rgba(217, 138, 43, 0.35),
+    inset 0 1px 0 rgba(255, 235, 200, 0.08),
+    0 8px 18px -10px rgba(0, 0, 0, 0.65);
 }
 
 /* ---------- buttons ---------- */
+/* Carved amber: lit from above, a dark underside bevel, a faint torch halo. */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  background: linear-gradient(180deg, var(--accent-glow), var(--accent));
+  background: linear-gradient(180deg, var(--accent-glow), var(--accent) 70%, #c47a20);
   color: #2a1a08;
-  border: 1px solid var(--accent-deep);
-  border-radius: 7px;
+  border: 1px solid #7a4c12;
+  border-radius: 8px;
   font-weight: 700;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 0 rgba(255, 240, 210, 0.4);
   box-shadow:
-    inset 0 1px 0 rgba(255, 240, 210, 0.45),
-    0 0 18px -4px rgba(243, 173, 73, 0.45),
-    0 6px 14px -7px rgba(0, 0, 0, 0.7);
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 244, 214, 0.55),
+    inset 0 -2px 0 rgba(110, 56, 8, 0.35),
+    0 0 20px -6px rgba(243, 173, 73, 0.5),
+    0 8px 16px -8px rgba(0, 0, 0, 0.7);
   transition: transform 0.08s ease, filter 0.08s ease, box-shadow 0.08s ease;
 }
 .btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
-.btn:active { transform: translateY(0); filter: brightness(0.96); }
+.btn:active {
+  transform: translateY(1px);
+  filter: brightness(0.94);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    inset 0 2px 3px rgba(80, 40, 5, 0.4),
+    0 2px 6px -4px rgba(0, 0, 0, 0.7);
+}
 
 .btn-ghost {
   display: inline-flex;
@@ -174,12 +258,24 @@ button, input, select, textarea { font: inherit; }
   background: var(--card);
   color: var(--ink);
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 8px;
   font-weight: 600;
-  box-shadow: inset 0 1px 0 rgba(255, 235, 200, 0.08), 0 4px 12px -8px rgba(0, 0, 0, 0.6);
-  transition: transform 0.08s ease, border-color 0.08s ease;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 235, 200, 0.08),
+    0 4px 12px -8px rgba(0, 0, 0, 0.6);
+  transition: transform 0.08s ease, border-color 0.08s ease, box-shadow 0.08s ease;
 }
-.btn-ghost:hover { transform: translateY(-1px); border-color: var(--accent); }
+.btn-ghost:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-deep);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 235, 200, 0.08),
+    0 0 12px -4px rgba(243, 173, 73, 0.25),
+    0 6px 14px -8px rgba(0, 0, 0, 0.65);
+}
+.btn-ghost:active { transform: translateY(1px); }
 
 /* ---------- form fields ---------- */
 .in {
@@ -187,16 +283,34 @@ button, input, select, textarea { font: inherit; }
   background: rgba(18, 14, 8, 0.85);
   color: var(--ink);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 7px;
   padding: 0.55rem 0.75rem;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(0, 0, 0, 0.2);
   transition: border-color 0.08s ease, box-shadow 0.08s ease;
 }
-.in::placeholder { color: #8a7c5e; }
+.in::placeholder { color: #8a7c5e; font-style: italic; }
 .in:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(217, 138, 43, 0.25), inset 0 1px 3px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 3px rgba(217, 138, 43, 0.22), inset 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+.in:focus-visible { outline: none; }
+
+/* ---------- timeline "Today" pill — parchment tag, not a UI chip ---------- */
+.pill-today {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(180deg, #f0e3c2, #ddcba0);
+  color: #2a1d0c;
+  border: 1px solid #8a744a;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
 /* ---------- range slider (warm, crafted, but smooth) ---------- */
@@ -213,12 +327,14 @@ input[type="range"]::-webkit-slider-runnable-track {
   border-radius: 999px;
   background: linear-gradient(180deg, #2a2318, #38301f);
   border: 1px solid var(--line);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 input[type="range"]::-moz-range-track {
   height: 8px;
   border-radius: 999px;
   background: linear-gradient(180deg, #2a2318, #38301f);
   border: 1px solid var(--line);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -229,7 +345,7 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 999px;
   background: radial-gradient(circle at 35% 30%, var(--accent-glow), var(--accent));
   border: 1px solid var(--accent-deep);
-  box-shadow: 0 0 10px -2px rgba(243, 173, 73, 0.6), 0 2px 5px -1px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 10px -2px rgba(243, 173, 73, 0.6), 0 2px 5px -1px rgba(0, 0, 0, 0.6);
 }
 input[type="range"]::-moz-range-thumb {
   height: 20px;
@@ -237,7 +353,7 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 999px;
   background: radial-gradient(circle at 35% 30%, var(--accent-glow), var(--accent));
   border: 1px solid var(--accent-deep);
-  box-shadow: 0 0 10px -2px rgba(243, 173, 73, 0.6), 0 2px 5px -1px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 10px -2px rgba(243, 173, 73, 0.6), 0 2px 5px -1px rgba(0, 0, 0, 0.6);
 }
 input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 

@@ -309,7 +309,7 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
               the others proportionally; at capacity the slider stops. Honey is
               entered in weight but counted in volume against the vessel. */}
           <p className="eyebrow text-[var(--ink-soft)]">
-            Fill the {u.toDisplayVolume(vessel.capacityL).toFixed(1)} {u.volume} {vessel.shape === "bucket" ? "bucket" : "jar"}
+            Fill the {u.toDisplayVolume(vessel.capacityL).toFixed(1)} {u.volume} {vessel.label.split(" ").pop()}
           </p>
           <div className="grid sm:grid-cols-2 gap-5">
             <CapSlider

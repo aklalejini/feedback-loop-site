@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SITE_URL } from "@/lib/site";
 import { AFFILIATE_CATEGORIES } from "@/lib/affiliate";
 import { BuyLink } from "@/components/BuyLink";
+import { Ornament } from "@/components/Ornament";
 
 const TITLE = "Gear & ingredients for mead-making";
 const DESCRIPTION =
@@ -36,6 +37,8 @@ export default function GearPage() {
           ))}
         </nav>
       </header>
+
+      <Ornament />
 
       {AFFILIATE_CATEGORIES.map((c) => (
         <section key={c.id} id={c.id} className="grid gap-3 scroll-mt-24">

@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Source_Serif_4 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { UnitsToggle } from "@/components/UnitsToggle";
 import { SceneProvider } from "@/components/Scene";
+import { Ornament } from "@/components/Ornament";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -51,11 +52,24 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     images: ["/og-image.png"],
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   // Optional: paste the Search Console "HTML tag" code into this env var if you
   // verify by meta tag instead of DNS. No-op when unset.
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
     : undefined,
+};
+
+export const viewport: Viewport = {
+  themeColor: "#14110b",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -90,11 +104,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="divider mt-4" />
           </header>
           {children}
-          <footer className="mt-16 pt-6 border-t border-[var(--line)] text-xs text-[var(--muted)] flex flex-wrap gap-x-6 gap-y-2 items-baseline">
-            <span>© Meadbook</span>
-            <a href="/yeast" className="no-underline hover:underline">Yeast guide</a>
-            <a href="/gear" className="no-underline hover:underline">Gear list</a>
-            <span className="text-[var(--muted)]">Some product links are affiliate links — Meadbook may earn a small commission. Costs you nothing.</span>
+          <footer className="mt-16 grid gap-4">
+            <Ornament />
+            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-xs text-[var(--muted)]">
+              <span className="inline-flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/icon-192.png" alt="" width={16} height={16} className="h-4 w-auto opacity-90" aria-hidden />
+                <span className="font-display text-[13px] tracking-wide text-[var(--ink-soft)]">Meadbook</span>
+                <span aria-hidden>·</span>
+                <span className="italic">plan well, brew slow</span>
+              </span>
+              <span className="flex gap-x-5">
+                <a href="/yeast" className="no-underline hover:underline">Yeast guide</a>
+                <a href="/gear" className="no-underline hover:underline">Gear list</a>
+              </span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-[var(--muted)] opacity-80">
+              Some product links are affiliate links — Meadbook may earn a small commission, at no
+              cost to you. Brew notes never leave your browser.
+            </p>
           </footer>
         </main>
         </SceneProvider>
