@@ -17,28 +17,34 @@ export const metadata: Metadata = {
 
 export default function YeastIndexPage() {
   return (
-    <div className="grid gap-8">
-      <section className="grid gap-3">
-        <p className="eyebrow">knowledge base</p>
-        <h1 className="text-4xl sm:text-5xl font-display font-semibold leading-[1.05]">Mead yeast guide</h1>
-        <p className="text-[var(--ink-soft)] max-w-2xl leading-relaxed">
-          Picking a yeast sets your mead&apos;s alcohol ceiling, temperature window, and flavor. These
-          profiles are drawn from manufacturer data — more strains are being added as they&apos;re sourced.
+    <div className="grid gap-8 reveal-stagger">
+      <section className="grid gap-4">
+        <p className="eyebrow text-on-wall">knowledge base</p>
+        <h1 className="text-4xl sm:text-5xl font-display font-semibold leading-[1.05]">
+          Mead yeast <em className="display-accent">guide</em>.
+        </h1>
+        <p className="hero-sub text-on-wall">
+          Picking a yeast sets your mead&apos;s alcohol ceiling, its temperature window, and a fair
+          share of its flavour. Profiles drawn straight from manufacturer data.
         </p>
       </section>
 
       <Ornament />
 
-      <ul className="grid sm:grid-cols-2 gap-3">
+      <ul className="grid sm:grid-cols-2 gap-4 reveal-stagger">
         {YEAST_PROFILES.map((y) => (
-          <li key={y.slug} className="pixel-card p-4 transition-transform hover:-translate-y-0.5">
-            <Link href={`/yeast/${y.slug}`} className="grid gap-1.5 no-underline text-[var(--ink)]">
+          <li key={y.slug} className="pixel-card p-5 transition-transform hover:-translate-y-1">
+            <Link href={`/yeast/${y.slug}`} className="grid gap-2 no-underline text-[var(--ink)]">
               <div className="flex items-baseline justify-between gap-2">
-                <h2 className="font-display text-xl leading-tight">{y.name}</h2>
-                <span className="text-[11px] font-mono text-[var(--muted)] whitespace-nowrap">{y.alcoholTolerance}</span>
+                <h2 className="font-display text-2xl leading-tight">{y.name}</h2>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--accent-glow)] whitespace-nowrap">{y.alcoholTolerance}</span>
               </div>
               <p className="text-sm text-[var(--ink-soft)] leading-snug">{y.summary}</p>
-              <p className="text-xs text-[var(--muted)]">{y.tempRange}</p>
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-[var(--muted)] mt-1">
+                <span className="font-mono">{y.tempRange}</span>
+                <span aria-hidden>·</span>
+                <span>{y.nitrogen} nitrogen</span>
+              </div>
             </Link>
           </li>
         ))}

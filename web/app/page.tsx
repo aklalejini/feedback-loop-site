@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MeadForm } from "@/components/MeadForm";
@@ -9,9 +9,10 @@ import { BuyLink } from "@/components/BuyLink";
 import { Ornament } from "@/components/Ornament";
 import { AFFILIATE_KITS } from "@/lib/affiliate";
 import { events } from "@/lib/analytics";
-import { buildSampleMead, SAMPLES, type SampleSpec } from "@/lib/samples";
+import { buildAllSamples, type SampleSpec } from "@/lib/samples";
 import { loadMeads, upsertMead } from "@/lib/storage";
-import { HONEYS, project, VESSELS, type Mead, type PhaseName } from "@/lib/mead";
+import { HONEYS, project, VESSELS, type Mead, type PhaseName, type VesselKind, type HoneyType } from "@/lib/mead";
+import { STYLE_PROFILES, type StyleKind } from "@/lib/styles";
 
 export default function HomePage() {
   const router = useRouter();
@@ -33,6 +34,10 @@ export default function HomePage() {
     return () => window.removeEventListener("resize", update);
   }, []);
 
+  // Build samples client-side so each card can preview its actual recipe
+  // (vessel + honey colour + ABV + ready window).
+  const samples = useMemo(() => buildAllSamples(), []);
+
   function handleSubmit(mead: Mead) {
     const next = upsertMead(mead);
     setMeads(next);
@@ -45,30 +50,38 @@ export default function HomePage() {
   }
 
   function loadSample(spec: SampleSpec) {
-    const sample = buildSampleMead(spec);
-    upsertMead(sample);
+    const built = samples.find((s) => s.spec.kind === spec.kind)?.mead;
+    if (!built) return;
+    upsertMead(built);
     events.sampleLoaded(spec.kind);
-    router.push(`/mead/${sample.id}`);
+    router.push(`/mead/${built.id}`);
   }
 
   return (
-    <div className="grid gap-8">
-      <section className="grid gap-3">
+    <div className="grid gap-10 reveal-stagger">
+      <section className="grid gap-4">
         <p className="eyebrow text-on-wall">a brewer&apos;s workbench</p>
-        <h1 className="text-4xl sm:text-5xl font-display font-semibold leading-[1.05]">
+        <h1 className="text-5xl sm:text-6xl font-display font-semibold leading-[1.02] tracking-tight">
           Plan and track your <em className="display-accent">mead</em>.
         </h1>
-        <p className="text-[var(--ink-soft)] text-on-wall max-w-2xl leading-relaxed">
-          Design a batch, watch its fermentation timeline unfold, and log readings as it goes.
-          Nothing leaves your browser — your batches live on this device.
+        <p className="hero-sub text-on-wall">
+          A quiet planner and a private journal — from your first jar to a brimming carboy.
+          Free, runs in your browser, your batches live only on this device.
         </p>
       </section>
 
       <Ornament />
 
-      <section className="grid gap-4">
+      <section className="grid gap-5">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-display font-semibold">Your batches</h2>
+          <div className="flex items-baseline gap-3">
+            <h2 className="text-2xl font-display font-semibold">Your batches</h2>
+            {meads.length > 0 ? (
+              <span className="text-xs text-[var(--muted)] italic">
+                {meads.length} in the cellar
+              </span>
+            ) : null}
+          </div>
           {!creating ? (
             <button onClick={() => setCreating(true)} className="btn px-4 py-2">
               New batch
@@ -81,51 +94,11 @@ export default function HomePage() {
         ) : null}
 
         {meads.length === 0 && !creating ? (
-          <div className="pixel-card p-6 sm:p-8 grid gap-4">
-            <div className="text-center grid gap-1">
-              <p className="text-[var(--ink-soft)]">
-                No batches yet. Design your own with{" "}
-                <strong className="text-[var(--ink)]">New batch</strong>,
-                or load a sample below to see how the planner works.
-              </p>
-              <p className="text-xs text-[var(--muted)]">
-                Each sample is a clearly-labeled starting recipe — pick by what you want it to taste like.
-                You can delete or edit it anytime.
-              </p>
-            </div>
-            <ul className="grid sm:grid-cols-2 gap-3">
-              {SAMPLES.map((spec) => (
-                <li key={spec.kind}>
-                  <button
-                    type="button"
-                    onClick={() => loadSample(spec)}
-                    className="opt w-full p-3 grid gap-1 text-left"
-                  >
-                    <span className="flex items-center gap-2">
-                      <span
-                        aria-hidden
-                        className="inline-block h-3 w-3 rounded-sm border border-[var(--ink)]"
-                        style={{ background: spec.swatchColor }}
-                      />
-                      <span className="font-display text-lg leading-tight">{spec.label}</span>
-                    </span>
-                    <span className="text-sm text-[var(--ink-soft)] leading-snug">{spec.endProduct}</span>
-                    <span className="text-xs text-[var(--muted)] font-mono">{spec.takeaway}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            {/* Beginners loading a sample: a one-line nudge for the kit. Sits
-                under the grid so it never blocks the planner samples themselves. */}
-            <p className="text-xs text-[var(--muted)] flex items-baseline gap-2 flex-wrap pt-1">
-              <span>No gear yet?</span>
-              <BuyLink item={AFFILIATE_KITS[0]} text="A 1-gallon starter kit covers your first batch" />
-            </p>
-          </div>
+          <EmptyCellar samples={samples} onLoad={loadSample} />
         ) : null}
 
         {meads.length > 0 ? (
-          <ul className="grid gap-3">
+          <ul className="grid gap-3 reveal-stagger">
             {meads.map((m) => (
               <BatchRow key={m.id} mead={m} vesselSize={vesselSize} />
             ))}
@@ -133,6 +106,119 @@ export default function HomePage() {
         ) : null}
       </section>
     </div>
+  );
+}
+
+// ============================================================================
+// Empty state: the cellar's first impression. Three vessels on a wooden shelf,
+// candle pool warming the wall behind them, then four recipe cards a brand-new
+// visitor can pick from to taste-test the planner.
+// ============================================================================
+function EmptyCellar({
+  samples,
+  onLoad,
+}: {
+  samples: ReturnType<typeof buildAllSamples>;
+  onLoad: (spec: SampleSpec) => void;
+}) {
+  const shelf: VesselKind[] = ["jar-1gal", "jug-1gal", "jug-5gal"];
+  return (
+    <div className="grid gap-7">
+      <div className="grid gap-3 text-center">
+        <div className="cellar-shelf">
+          <div className="pool" aria-hidden />
+          <div className="vessels">
+            {shelf.map((v) => (
+              <SpriteVessel
+                key={v}
+                vessel={v}
+                honeyType="wildflower"
+                liters={0}
+                phase="lag"
+                size={104}
+                animated={false}
+              />
+            ))}
+          </div>
+          <div className="plank" />
+        </div>
+        <h3 className="font-display text-3xl sm:text-4xl leading-tight">
+          Your cellar is <em className="display-accent">empty</em>.
+        </h3>
+        <p className="text-[var(--ink-soft)] max-w-lg mx-auto leading-relaxed">
+          Pick a recipe to taste-test the planner, or design your own with{" "}
+          <strong className="text-[var(--ink)]">New batch</strong>. Each sample is a real working recipe —
+          edit, copy, or delete it any time.
+        </p>
+      </div>
+
+      <ul className="grid sm:grid-cols-2 gap-4 reveal-stagger">
+        {samples.map(({ spec, mead }) => (
+          <li key={spec.kind} className="contents">
+            <RecipeCard spec={spec} mead={mead} onLoad={onLoad} />
+          </li>
+        ))}
+      </ul>
+
+      <p className="text-xs text-[var(--muted)] text-center flex items-baseline justify-center gap-2 flex-wrap">
+        <span>No gear yet?</span>
+        <BuyLink item={AFFILIATE_KITS[0]} text="A 1-gallon starter kit covers your first batch" />
+      </p>
+    </div>
+  );
+}
+
+// One recipe card: vessel-stage hero, style tag, label + flavour line,
+// honey + yeast metadata, and the takeaway as a "ready when" footer.
+function RecipeCard({
+  spec,
+  mead,
+  onLoad,
+}: {
+  spec: SampleSpec;
+  mead: Mead;
+  onLoad: (spec: SampleSpec) => void;
+}) {
+  const styleProfile = STYLE_PROFILES[spec.style as StyleKind];
+  const honey = HONEYS[mead.honeyType as HoneyType];
+  return (
+    <button
+      type="button"
+      onClick={() => onLoad(spec)}
+      className="recipe-card group"
+      aria-label={`Load sample: ${spec.label}`}
+    >
+      <div className="vessel-stage" aria-hidden>
+        <SpriteVessel
+          vessel={spec.vessel}
+          honeyType={mead.honeyType}
+          juiceType={mead.juiceType}
+          juiceL={mead.juiceL}
+          liters={mead.waterL + (mead.juiceL ?? 0) + mead.honeyKg * 0.7}
+          phase="primary"
+          size={108}
+          animated
+        />
+      </div>
+
+      <span className="style-tag">
+        <span aria-hidden style={{ background: spec.swatchColor }} className="inline-block h-2 w-2 rounded-sm border border-[rgba(0,0,0,0.5)]" />
+        {styleProfile.label}
+      </span>
+
+      <div className="grid gap-1">
+        <h4 className="font-display text-xl leading-tight">{spec.label}</h4>
+        <p className="text-sm text-[var(--ink-soft)] leading-snug">{spec.endProduct}</p>
+        <p className="text-[11px] text-[var(--muted)] mt-1">
+          {honey.label} honey · {VESSELS[spec.vessel].label} · {mead.yeast}
+        </p>
+      </div>
+
+      <div className="start-line">
+        <span className="font-mono">{spec.takeaway}</span>
+        <span className="start-cta">Start brewing →</span>
+      </div>
+    </button>
   );
 }
 
