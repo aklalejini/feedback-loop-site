@@ -25,7 +25,7 @@ export default function MeadDetailPage() {
   useEffect(() => {
     const update = () => {
       const vw = window.innerWidth;
-      setVesselSize(vw >= 640 ? 200 : Math.min(vw - 64, 320));
+      setVesselSize(vw >= 640 ? 232 : Math.min(vw - 64, 320));
     };
     update();
     window.addEventListener("resize", update);
@@ -114,14 +114,18 @@ export default function MeadDetailPage() {
     );
   }
 
+  const ageDaysHeader = Math.floor((Date.now() - new Date(mead.createdAt).getTime()) / 86400000);
+  const previewing = previewPhase != null;
+
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-8 reveal-stagger">
       <header className="flex justify-between items-start gap-4 flex-wrap">
-        <div>
+        <div className="grid gap-1">
           <Link href="/" className="text-sm text-[var(--muted)] no-underline hover:underline">← All batches</Link>
-          <h1 className="text-4xl font-display mt-1 leading-tight">{mead.name}</h1>
-          <p className="text-sm text-[var(--muted)]">
+          <h1 className="text-4xl sm:text-5xl font-display mt-1 leading-[1.05] text-balance">{mead.name}</h1>
+          <p className="text-sm text-[var(--muted)] italic">
             Started {new Date(mead.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}
+            <span className="not-italic"> · </span>{ageDaysHeader === 0 ? "day 0" : `${ageDaysHeader}d in`}
           </p>
         </div>
         <div className="flex gap-2">
@@ -138,8 +142,8 @@ export default function MeadDetailPage() {
         </div>
       </header>
 
-      <section className="grid sm:grid-cols-[auto,1fr] gap-6 items-start">
-        <div className="pixel-card-sm p-3 mx-auto sm:mx-0 bg-[var(--bg)]">
+      <section className="grid sm:grid-cols-[minmax(220px,260px),1fr] gap-6 items-start">
+        <div className="vessel-stage-card mx-auto sm:mx-0 relative">
           <SpriteVessel
             vessel={mead.vessel}
             honeyType={mead.honeyType}
@@ -149,6 +153,13 @@ export default function MeadDetailPage() {
             phase={previewPhase ?? proj.currentPhase}
             size={vesselSize}
           />
+          <p className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.2em] text-[var(--muted)] whitespace-nowrap">
+            {previewing ? (
+              <>previewing <strong className="text-[var(--accent-glow)]">{previewPhase}</strong></>
+            ) : (
+              <>now <strong className="text-[var(--accent-glow)]">{proj.currentPhase}</strong></>
+            )}
+          </p>
         </div>
         <div className="grid gap-4">
           <SpecSheet

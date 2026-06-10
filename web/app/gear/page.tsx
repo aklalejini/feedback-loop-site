@@ -18,16 +18,16 @@ export const metadata: Metadata = {
 
 export default function GearPage() {
   return (
-    <article className="grid gap-10">
-      <header className="grid gap-3 max-w-2xl">
-        <p className="eyebrow text-on-wall">Brewer&apos;s gear list</p>
+    <article className="grid gap-10 reveal-stagger">
+      <header className="grid gap-4 max-w-2xl">
+        <p className="eyebrow text-on-wall">brewer&apos;s gear list</p>
         <h1 className="text-4xl sm:text-5xl font-display font-semibold leading-[1.05]">
-          What you need to make mead.
+          What you need to <em className="display-accent">make</em> mead.
         </h1>
-        <p className="text-[var(--ink-soft)] text-on-wall leading-relaxed">
-          A working gear list organised by what you grab first. Each pick is a real recommendation —
-          there&apos;s no &quot;buy everything&quot; here. Some links are affiliate links; if you buy something Meadbook
-          may earn a small commission at no extra cost to you.
+        <p className="hero-sub text-on-wall">
+          A working list organised by what you grab first. Each pick is a real recommendation — no
+          &quot;buy everything&quot; padding. Some links are affiliate; if you buy something, Meadbook
+          earns a small commission at no extra cost to you.
         </p>
         <nav aria-label="Sections" className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--accent-glow)]">
           {AFFILIATE_CATEGORIES.map((c) => (
