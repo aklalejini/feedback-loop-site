@@ -180,12 +180,12 @@ export function Timeline({ projection, now = new Date(), selectedPhase, onSelect
             one connected element at the current position. The pill gets a small
             edge inset at day 0 so it doesn't sit flush against the bar corner. */}
         <div className="pointer-events-none absolute top-0 whitespace-nowrap" style={pillAnchor(nowPct)}>
-          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--ink)] px-2 py-0.5 text-[10px] font-bold leading-none text-[var(--card)] shadow">
+          <span className="pill-today">
             Today
           </span>
         </div>
-        <div className="pointer-events-none absolute w-0.5 bg-[var(--ink)]" style={{ top: "22px", bottom: 0, ...lineLeft(nowPct) }} aria-hidden />
-        <div className="pointer-events-none absolute h-1.5 w-1.5 rotate-45 bg-[var(--ink)]" style={{ top: "21px", ...lineLeft(nowPct) }} aria-hidden />
+        <div className="pointer-events-none absolute w-0.5 bg-[var(--parchment)] shadow-[0_0_0_1px_rgba(0,0,0,0.35)]" style={{ top: "22px", bottom: 0, ...lineLeft(nowPct) }} aria-hidden />
+        <div className="pointer-events-none absolute h-1.5 w-1.5 rotate-45 bg-[var(--parchment)] shadow-[0_0_0_1px_rgba(0,0,0,0.35)]" style={{ top: "21px", ...lineLeft(nowPct) }} aria-hidden />
       </div>
 
       {/* boundary ticks + dates */}
