@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { UnitsToggle } from "@/components/UnitsToggle";
 import { SceneProvider } from "@/components/Scene";
 import { Ornament } from "@/components/Ornament";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -77,6 +78,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body>
         <Analytics />
+        <GoogleAnalytics />
         <SceneProvider>
         <main className="max-w-5xl mx-auto px-5 py-9">
           <header className="mb-9">
