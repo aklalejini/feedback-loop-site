@@ -42,6 +42,37 @@ interface Props {
 
 const COMMON_SPICES = ["cinnamon", "vanilla bean", "orange peel", "clove", "ginger", "elderberry", "cayenne", "habanero"];
 
+// Vessel choice is really two decisions, but only the first affects the recipe:
+// SIZE sets capacity (every slider below scales to it), while CONTAINER STYLE
+// only swaps the artwork + the "buy this" link. So the form leads with two size
+// cards — both showing the see-through carboy so the mead's colour reads in the
+// preview — and offers the alternate container as an optional switch.
+const VESSEL_SIZES: {
+  size: string;
+  capacityL: number;
+  default: VesselKind;
+  variants: { kind: VesselKind; label: string }[];
+}[] = [
+  {
+    size: "1 gallon",
+    capacityL: VESSELS["jug-1gal"].capacityL,
+    default: "jug-1gal",
+    variants: [
+      { kind: "jug-1gal", label: "Carboy" },
+      { kind: "jar-1gal", label: "Wide-mouth jar" },
+    ],
+  },
+  {
+    size: "5 gallon",
+    capacityL: VESSELS["jug-5gal"].capacityL,
+    default: "jug-5gal",
+    variants: [
+      { kind: "jug-5gal", label: "Carboy" },
+      { kind: "bucket-5gal", label: "Bucket" },
+    ],
+  },
+];
+
 export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batch" }: Props) {
   // The batch form (new + edit) shows the cellar backdrop while it's open.
   useScene("cellar");
@@ -53,6 +84,10 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
     setDraft((d) => ({ ...d, [key]: value }));
 
   const vessel = VESSELS[draft.vessel];
+  // Which size group the current vessel belongs to (drives the size cards +
+  // which container-style options to offer).
+  const activeSize =
+    VESSEL_SIZES.find((g) => g.variants.some((v) => v.kind === draft.vessel)) ?? VESSEL_SIZES[0];
   const composition = mustComposition(draft);
   const totalL = composition.totalL;
   const isEmpty = totalL <= 0.01;
@@ -191,32 +226,57 @@ export function MeadForm({ initial, onSubmit, onCancel, submitLabel = "Save batc
             />
           </Field>
 
-          {/* Vessel cards — chosen FIRST because every slider below is expressed
-              as a fraction of vessel capacity (the "VESSEL FULL" tag, the
-              capacity readout). Picking the container anchors everything. */}
+          {/* Vessel — chosen FIRST because every slider below is expressed as a
+              fraction of capacity (the "vessel full" tag, the capacity readout).
+              SIZE is the only choice that touches the recipe; container style is
+              an optional look-only switch. */}
           <Field label="Vessel">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {Object.values(VESSELS).map((v) => (
+            <div className="grid grid-cols-2 gap-2">
+              {VESSEL_SIZES.map((group) => {
+                const active = group === activeSize;
+                // The active card mirrors the chosen container; inactive sizes
+                // show the default carboy.
+                const shownKind = active ? draft.vessel : group.default;
+                return (
+                  <button
+                    key={group.size}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => { if (!active) changeVessel(group.default); }}
+                    className="opt p-2 flex flex-col items-center gap-1 text-center"
+                  >
+                    <SpriteVessel
+                      vessel={shownKind}
+                      honeyType={draft.honeyType}
+                      liters={group.capacityL * 0.6}
+                      phase="lag"
+                      size={40}
+                      animated={false}
+                    />
+                    <span className="text-xs font-semibold leading-tight">{group.size}</span>
+                    <span className="text-[10px] text-[var(--muted)]">{group.capacityL.toFixed(1)} L</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Optional container style — same capacity, only changes the
+                artwork + the affiliate link below. */}
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
+              <span className="eyebrow text-[var(--ink-soft)]">Container</span>
+              {activeSize.variants.map((v) => (
                 <button
                   key={v.kind}
                   type="button"
                   aria-pressed={draft.vessel === v.kind}
-                  onClick={() => changeVessel(v.kind as VesselKind)}
-                  className="opt p-2 flex flex-col items-center gap-1 text-center"
+                  onClick={() => changeVessel(v.kind)}
+                  className="opt px-2.5 py-1 text-xs font-semibold"
                 >
-                  <SpriteVessel
-                    vessel={v.kind as VesselKind}
-                    honeyType={draft.honeyType}
-                    liters={v.capacityL * 0.6}
-                    phase="lag"
-                    size={40}
-                    animated={false}
-                  />
-                  <span className="text-xs font-semibold leading-tight">{v.label}</span>
-                  <span className="text-[10px] text-[var(--muted)]">{v.capacityL.toFixed(1)} L</span>
+                  {draft.vessel === v.kind ? "✓ " : ""}{v.label}
                 </button>
               ))}
             </div>
+
             <div className="mt-1">
               <BuyLink item={AFFILIATE_VESSEL[draft.vessel]} text={`Buy this ${VESSELS[draft.vessel].label.toLowerCase()}`} />
             </div>
