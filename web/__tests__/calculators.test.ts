@@ -4,7 +4,10 @@ import {
   abvHighGravity,
   computeAbv,
   HIGH_GRAVITY_OG,
+  honeyToTarget,
+  SWEETNESS_BANDS,
 } from "../lib/calculators";
+import { HONEY_DENSITY_L_PER_KG, HONEY_GRAVITY_PER_KG_PER_L } from "../lib/mead";
 
 describe("abvBasic", () => {
   it("matches (OG - FG) * 131.25", () => {
@@ -63,5 +66,63 @@ describe("computeAbv", () => {
   it("warns when the result exceeds any yeast's tolerance", () => {
     const r = computeAbv(1.18, 1.0); // 23.6% basic
     expect(r.warnings.some((w) => w.includes("20%"))).toBe(true);
+  });
+});
+
+describe("honeyToTarget", () => {
+  it("round-trips: adding the suggested honey reaches the target gravity", () => {
+    const V = 18.9, G = 0.998, T = 1.015;
+    const r = honeyToTarget(V, G, T);
+    expect(r.error).toBeUndefined();
+    // Recompute the gravity the planner's own model would give after the add.
+    const newSG =
+      1 + ((G - 1) * V + HONEY_GRAVITY_PER_KG_PER_L * r.honeyKg) / (V + HONEY_DENSITY_L_PER_KG * r.honeyKg);
+    expect(newSG).toBeCloseTo(T, 6);
+    expect(r.newVolumeL).toBeCloseTo(V + r.honeyKg * HONEY_DENSITY_L_PER_KG, 6);
+  });
+
+  it("suggests ~1 kg for a dry 5-gallon batch to semi-sweet", () => {
+    const r = honeyToTarget(18.9, 0.998, 1.015);
+    expect(r.honeyKg).toBeGreaterThan(0.9);
+    expect(r.honeyKg).toBeLessThan(1.2);
+  });
+
+  it("returns zero honey when already at target", () => {
+    const r = honeyToTarget(3.78, 1.015, 1.015);
+    expect(r.error).toBeUndefined();
+    expect(r.honeyKg).toBe(0);
+  });
+
+  it("more sweetness needs more honey", () => {
+    const semi = honeyToTarget(3.78, 1.0, 1.018);
+    const sweet = honeyToTarget(3.78, 1.0, 1.035);
+    expect(sweet.honeyKg).toBeGreaterThan(semi.honeyKg);
+  });
+
+  it("errors when the target is below the current gravity", () => {
+    const r = honeyToTarget(3.78, 1.02, 1.005);
+    expect(r.error).toBeTruthy();
+    expect(r.honeyKg).toBe(0);
+  });
+
+  it("errors on a non-positive volume", () => {
+    expect(honeyToTarget(0, 1.0, 1.02).error).toBeTruthy();
+  });
+
+  it("warns above the sweet band", () => {
+    const r = honeyToTarget(3.78, 1.0, 1.06);
+    expect(r.warnings.some((w) => w.includes("sweet band"))).toBe(true);
+  });
+
+  it("warns on an implausible current gravity", () => {
+    const r = honeyToTarget(3.78, 1.08, 1.09);
+    expect(r.warnings.some((w) => w.includes("Current gravity"))).toBe(true);
+  });
+
+  it("band targets sit inside their own FG ranges", () => {
+    for (const b of SWEETNESS_BANDS) {
+      expect(b.target).toBeGreaterThanOrEqual(b.fgMin);
+      expect(b.target).toBeLessThanOrEqual(b.fgMax);
+    }
   });
 });
