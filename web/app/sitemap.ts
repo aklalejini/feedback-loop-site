@@ -6,7 +6,7 @@ import { allYeastSlugs } from "@/lib/knowledge/yeasts";
 // types are added (honey, troubleshooting, …).
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
-  const staticRoutes = ["", "/yeast", "/gear", "/calculators", "/calculators/abv"].map((path) => ({
+  const staticRoutes = ["", "/yeast", "/gear", "/calculators", "/calculators/abv", "/calculators/backsweeten"].map((path) => ({
     url: `${SITE_URL}${path}`,
     lastModified: now,
     changeFrequency: "weekly" as const,
