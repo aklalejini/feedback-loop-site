@@ -95,7 +95,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </a>
               <nav className="flex items-center gap-3 text-sm">
                 <a href="/yeast" className="no-underline text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
-                  Yeast guide
+                  Yeast<span className="hidden sm:inline"> guide</span>
+                </a>
+                <a href="/calculators" className="no-underline text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
+                  Calculators
                 </a>
                 <a href="/gear" className="no-underline text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
                   Gear
