@@ -23,10 +23,6 @@ export default function AbvCalculatorPage() {
         <h1 className="text-4xl sm:text-5xl font-display font-semibold leading-[1.05]">
           Mead <em className="display-accent">ABV</em> calculator.
         </h1>
-        <p className="hero-sub text-on-wall">
-          Two hydrometer readings — before and after fermentation — are all it takes. Measured
-          readings beat any recipe projection.
-        </p>
       </section>
 
       <Ornament />
