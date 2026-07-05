@@ -82,8 +82,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SceneProvider>
         <main className="max-w-5xl mx-auto px-5 py-9">
           <header className="mb-9">
-            <div className="flex items-center justify-between gap-4">
-              <a href="/" className="inline-flex items-center no-underline" aria-label="Meadbook — home">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+              <a href="/" className="inline-flex items-center no-underline shrink-0" aria-label="Meadbook — home">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/meadbook-logo.png"
@@ -93,12 +93,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   className="h-11 sm:h-12 w-auto"
                 />
               </a>
-              <nav className="flex items-center gap-3 text-sm">
+              <nav className="flex items-center gap-3 text-sm ml-auto">
                 <a href="/yeast" className="no-underline text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
                   Yeast<span className="hidden sm:inline"> guide</span>
                 </a>
                 <a href="/calculators" className="no-underline text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
-                  Calculators
+                  Calc<span className="hidden sm:inline">ulator</span>s
+                </a>
+                <a href="/resources" className="no-underline text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
+                  Resources
                 </a>
                 <a href="/gear" className="no-underline text-[var(--ink-soft)] hover:text-[var(--ink)] hover:underline">
                   Gear
@@ -122,6 +125,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="flex flex-wrap gap-x-5 gap-y-1">
                 <a href="/yeast" className="no-underline hover:underline">Yeast guide</a>
                 <a href="/calculators" className="no-underline hover:underline">Calculators</a>
+                <a href="/resources" className="no-underline hover:underline">Resources</a>
                 <a href="/gear" className="no-underline hover:underline">Gear list</a>
               </span>
             </div>
