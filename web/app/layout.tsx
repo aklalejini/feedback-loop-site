@@ -116,8 +116,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <span aria-hidden>·</span>
                 <span className="italic">plan well, brew slow</span>
               </span>
-              <span className="flex gap-x-5">
+              <span className="flex flex-wrap gap-x-5 gap-y-1">
                 <a href="/yeast" className="no-underline hover:underline">Yeast guide</a>
+                <a href="/calculators" className="no-underline hover:underline">Calculators</a>
                 <a href="/gear" className="no-underline hover:underline">Gear list</a>
               </span>
             </div>
