@@ -1,6 +1,6 @@
-version: 2
+version: 3
 created: 2026-06-06
-last_updated: 2026-06-06
+last_updated: 2026-07-05
 
 history:
   - version: 1
@@ -21,6 +21,18 @@ history:
       constraints; widened scope to a knowledge base + crawlable content while
       keeping the no-wall / no-dark-pattern guarantees; added a 4th ship reason
       for factual/safety fixes.
+  - version: 3
+    date: 2026-07-05
+    summary: >
+      Analytics reality-check. Plausible was never actually installed; the site
+      instruments Vercel Web Analytics custom events (decision-layer actions)
+      and GA4 (#63, sessions/acquisition). Rather than leave the contract
+      pointing at a source that doesn't exist, blessed GA4 + Vercel Web
+      Analytics as the official metric sources, re-pointed every metric's
+      source, and updated the anti-goal accordingly (still no ad networks, no
+      tracking pixels, no other behavioral trackers). Decision-layer custom
+      events are mirrored to GA4 so the primary metric is measurable in either
+      source.
 
 mission: >
   A personalized decision layer for home mead-makers: design a batch, get
@@ -44,25 +56,25 @@ primary_metric:
       (c) complete a calculator (ABV, honey-to-gravity, nutrient, backsweetening),
       (d) view a saved batch or a knowledge-base entity page,
     OR remain active >30s with more than one meaningful interaction.
-  source: plausible
+  source: ga4 + vercel_analytics (decision-layer custom events fire to both)
   target_lift_per_cycle: 0.05   # 5% lift bar; see change_threshold
 
 secondary_metrics:
   - name: batch_creation_rate
     definition: "unique visitors who create >=1 batch / unique visitors"
-    source: plausible
+    source: ga4 (batch_created event / users)
   - name: calculator_completion_rate
     definition: "calculator completions / calculator starts"
-    source: plausible (custom event)
+    source: ga4 + vercel_analytics (custom event)
   - name: observations_per_batch
     definition: "mean observation logs per saved batch (the tracking loop)"
-    source: plausible (custom event)
+    source: ga4 + vercel_analytics (custom event)
   - name: return_visit_rate_7d
     definition: "% of visitors with a saved batch who return within 7 days"
-    source: plausible
+    source: ga4 (returning users)
   - name: time_to_first_batch
     definition: "median seconds from landing to first batch saved"
-    source: plausible (custom event)
+    source: ga4 + vercel_analytics (custom event)
 
 discovery_metrics:
   note: >
@@ -90,7 +102,7 @@ constraints:
 anti_goals:
   - "No dark patterns, fake urgency, popup nags, or manufactured streaks"
   - "No required signup or email wall for any core tool action (email/affiliate are opt-in and disclosed)"
-  - "No third-party ad networks and no behavioral trackers beyond Plausible; Google Search Console (SEO/webmaster) is permitted; GA4 is not (revisit explicitly if ever needed)"
+  - "No third-party ad networks and no tracking pixels; analytics limited to GA4 + Vercel Web Analytics (blessed v3) plus Google Search Console; no other behavioral trackers"
   - "No feature creep outside the decision-layer job (no comments, social feed, or unrelated content); a sourced knowledge base + calculators ARE in scope"
   - "Never present community protocols (e.g. TOSNA) as universal scientific law; never overstate precision or imply label/commercial ABV certification"
 
