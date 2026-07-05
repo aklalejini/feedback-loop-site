@@ -67,8 +67,8 @@ export default function GearPage() {
 
       <p className="text-xs text-[var(--muted)]">
         Disclosure: this page contains affiliate links to mead-making gear and ingredients.
-        Meadbook may earn a small commission on qualifying purchases. It costs you nothing extra,
-        and it helps keep the planner free.
+        As an Amazon Associate, Meadbook earns from qualifying purchases. It costs you nothing
+        extra, and it helps keep the planner free.
       </p>
     </article>
   );
