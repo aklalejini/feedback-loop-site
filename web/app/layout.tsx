@@ -28,7 +28,7 @@ const body = Source_Serif_4({
 
 const TITLE = "Meadbook — design and track your mead";
 const DESCRIPTION =
-  "Design a mead batch, watch a projected fermentation timeline unfold, and log observations as it progresses. Free, private, runs in your browser.";
+  "Design a mead batch, get gravity, ABV, and nutrient projections, and log readings as it ferments. Free, private, runs in your browser.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

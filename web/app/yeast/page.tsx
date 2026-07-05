@@ -24,8 +24,8 @@ export default function YeastIndexPage() {
           Mead yeast <em className="display-accent">guide</em>.
         </h1>
         <p className="hero-sub text-on-wall">
-          Picking a yeast sets your mead&apos;s alcohol ceiling, its temperature window, and a fair
-          share of its flavour. Profiles drawn straight from manufacturer data.
+          Picking a yeast sets your mead&apos;s alcohol ceiling, its temperature window, and much of
+          its flavour. Profiles drawn straight from manufacturer data.
         </p>
       </section>
 

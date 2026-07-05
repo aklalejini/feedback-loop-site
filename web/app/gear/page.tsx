@@ -25,9 +25,8 @@ export default function GearPage() {
           What you need to <em className="display-accent">make</em> mead.
         </h1>
         <p className="hero-sub text-on-wall">
-          A working list organised by what you grab first. Each pick is a real recommendation — no
-          &quot;buy everything&quot; padding. Some links are affiliate; if you buy something, Meadbook
-          earns a small commission at no extra cost to you.
+          A working list organised by what you grab first. Some links are affiliate; if you buy
+          something, Meadbook earns a small commission at no extra cost to you.
         </p>
         <nav aria-label="Sections" className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--accent-glow)]">
           {AFFILIATE_CATEGORIES.map((c) => (

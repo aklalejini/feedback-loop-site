@@ -65,8 +65,8 @@ export default function HomePage() {
           Plan and track your <em className="display-accent">mead</em>.
         </h1>
         <p className="hero-sub text-on-wall">
-          A quiet planner and a private journal — from your first jar to a brimming carboy.
-          Free, runs in your browser, your batches live only on this device.
+          Gravity, ABV, nutrient schedule, and timeline projections, plus a journal for your real
+          readings. Free, no account, and batches never leave your browser.
         </p>
       </section>
 

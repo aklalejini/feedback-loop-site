@@ -33,7 +33,7 @@ export default function CalculatorsIndexPage() {
           Mead <em className="display-accent">calculators</em>.
         </h1>
         <p className="hero-sub text-on-wall">
-          Quick, honest brewing math. No signup, and nothing you type leaves your browser.
+          No signup, and nothing you type leaves your browser.
         </p>
       </section>
 
