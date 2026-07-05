@@ -13,6 +13,11 @@ interface Props {
 // per Google's affiliate-link guidance. Always opens in a new tab so the
 // maker doesn't lose their in-progress batch. Returns null if no product is
 // registered for the key — safe to drop in anywhere.
+//
+// Disclosure: the inline variant carries its own muted "(affiliate)" tag so
+// every placement is disclosed next to the link (FTC proximity + the goal
+// contract's "visibly disclosed inline" rule). The row variant relies on the
+// /gear page's top + bottom disclosures instead of tagging every row.
 export function BuyLink({ item, text, variant = "inline", className = "" }: Props) {
   if (!item) return null;
   const label = text ?? `Buy ${item.label}`;
@@ -31,6 +36,7 @@ export function BuyLink({ item, text, variant = "inline", className = "" }: Prop
         <>
           <span>{label}</span>
           <span aria-hidden>↗</span>
+          <span className="font-normal text-[var(--muted)]">(affiliate)</span>
         </>
       ) : (
         <>

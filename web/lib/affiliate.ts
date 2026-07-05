@@ -7,7 +7,8 @@
 // broken links ship. Add entries when you have the URLs.
 //
 // rel="sponsored nofollow" is added by the renderer per Google's affiliate
-// guidance; a visible disclosure lives on /gear and in the footer.
+// guidance; inline links carry a "(affiliate)" tag, and the Amazon Associates
+// disclosure lives on /gear and in the footer.
 
 export interface Affiliate {
   url: string;

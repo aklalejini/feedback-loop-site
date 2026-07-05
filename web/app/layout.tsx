@@ -122,8 +122,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
             </div>
             <p className="text-[11px] leading-relaxed text-[var(--muted)] opacity-80">
-              Some product links are affiliate links — Meadbook may earn a small commission, at no
-              cost to you. Brew notes never leave your browser.
+              Some product links are affiliate links: as an Amazon Associate, Meadbook earns from
+              qualifying purchases, at no cost to you. Brew notes never leave your browser.
             </p>
           </footer>
         </main>
