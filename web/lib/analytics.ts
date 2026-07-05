@@ -28,4 +28,9 @@ export const events = {
     track("batch_viewed", props),
   sampleLoaded: (kind?: string) => track("sample_loaded", kind ? { kind } : undefined),
   nutrientAdded: () => track("nutrient_added"),
+  // Standalone calculators: started = first input touched, completed = first
+  // valid result shown. Both fire once per page view, so
+  // calculator_completion_rate (goal.yaml) is completions / starts.
+  calcStarted: (calc: string) => track("calc_started", { calc }),
+  calcCompleted: (calc: string) => track("calc_completed", { calc }),
 };
