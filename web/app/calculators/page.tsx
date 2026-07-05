@@ -22,6 +22,11 @@ const CALCULATORS = [
     name: "ABV calculator",
     blurb: "Alcohol by volume from two hydrometer readings — with a high-gravity variant for strong meads.",
   },
+  {
+    href: "/calculators/backsweeten",
+    name: "Backsweetening calculator",
+    blurb: "How much honey lifts a finished mead to your target gravity — with the stabilization warning that keeps bottles safe.",
+  },
 ];
 
 export default function CalculatorsIndexPage() {
